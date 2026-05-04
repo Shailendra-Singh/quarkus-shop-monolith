@@ -58,6 +58,9 @@ build/
 .vscode/
 *code-workspace
 
+## IntelliJ
+.idea/
+
 ### Kubernetes
 **secret.yaml
 **secret.yml
