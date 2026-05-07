@@ -1,0 +1,26 @@
+package me.shail.repositories;
+
+import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase;
+import io.smallrye.mutiny.Uni;
+import me.shail.models.Order;
+import org.hibernate.annotations.processing.Find;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface OrderRepository extends PanacheRepositoryBase<Order, UUID> {
+    /**
+     * Navigates: Order -> Cart -> Customer -> Id
+     * Matches the 'id' field of the Customer entity.
+     */
+    @Find
+    Uni<List<Order>> findByCart_Customer_Id(UUID id);
+
+    /**
+     * Standard find by Payment ID.
+     * Note: Changed from Long to UUID to match your project's identity strategy.
+     */
+    @Find
+    Uni<Optional<Order>> findByPaymentId(UUID id);
+}
