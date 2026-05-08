@@ -2,13 +2,13 @@ package me.shail.repositories;
 
 import io.quarkus.hibernate.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
-import me.shail.models.Review;
+import me.shail.models.Customer;
 import org.hibernate.annotations.processing.Find;
 
 import java.util.List;
 import java.util.UUID;
 
-public interface ReviewRepository extends PanacheRepository.Reactive.Stateless<Review, UUID> {
+public interface CustomerRepository extends PanacheRepository.Reactive.Stateless<Customer, UUID> {
     @Find
-    Uni<List<Review>> findReviewsByProduct_Id(UUID product$id);
+    Uni<List<Customer>> findAllByEnabled(Boolean enabled);
 }

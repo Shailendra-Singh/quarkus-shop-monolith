@@ -1,15 +1,16 @@
 package me.shail.repositories;
 
-import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase;
+import io.quarkus.hibernate.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
 import me.shail.models.Cart;
 import me.shail.models.enums.CartStatus;
 import org.hibernate.annotations.processing.Find;
+import org.hibernate.annotations.processing.HQL;
 
 import java.util.List;
 import java.util.UUID;
 
-public interface CartRepository extends PanacheRepositoryBase<Cart, UUID> {
+public interface CartRepository extends PanacheRepository.Reactive.Stateless<Cart, UUID> {
     /**
      * Finds carts by status.
      * Hibernate maps 'status' parameter to Cart.status field.
@@ -22,4 +23,7 @@ public interface CartRepository extends PanacheRepositoryBase<Cart, UUID> {
      */
     @Find
     Uni<List<Cart>> findByStatusAndCustomer_Id(CartStatus status, UUID id);
+
+    @HQL("update Cart set status = :status where id = :id")
+    Uni<Integer> updateStatusById(UUID id, CartStatus status);
 }

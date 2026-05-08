@@ -1,6 +1,6 @@
 package me.shail.repositories;
 
-import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase;
+import io.quarkus.hibernate.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
 import me.shail.models.Order;
 import org.hibernate.annotations.processing.Find;
@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface OrderRepository extends PanacheRepositoryBase<Order, UUID> {
+public interface OrderRepository extends PanacheRepository.Reactive.Stateless<Order, UUID> {
     /**
-     * Navigates: Order -> Cart -> Customer -> Id
+     * Navigates: Order -> Cart -> Customer -> id
      * Matches the 'id' field of the Customer entity.
      */
     @Find
