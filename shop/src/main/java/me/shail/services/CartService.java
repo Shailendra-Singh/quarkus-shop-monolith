@@ -2,6 +2,7 @@ package me.shail.services;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import me.shail.dtos.CartDto;
@@ -19,10 +20,12 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 @Transactional
 public class CartService {
-    //    @Inject
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
     CartRepository cartRepository;
 
-    //    @Inject
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
     CustomerRepository customerRepository;
 
     public static CartDto mapToDto(Cart cart) {
@@ -51,7 +54,7 @@ public class CartService {
                         .collect(Collectors.toList()));
     }
 
-    public Uni<Cart> create(UUID customerId) {
+    private Uni<Cart> _create(UUID customerId) {
         return this.getActiveCart(customerId)
                 .onItem().ifNotNull().failWith(new IllegalStateException("Active cart already exists."))
                 .chain(() -> this.customerRepository.findById(customerId))
@@ -60,6 +63,10 @@ public class CartService {
                     var cart = new Cart(customer, CartStatus.NEW);
                     return this.cartRepository.insert(cart).replaceWith(cart);
                 });
+    }
+
+    public Uni<CartDto> create(UUID customerId) {
+        return this._create(customerId).onItem().transform(CartService::mapToDto);
     }
 
     @Transactional(Transactional.TxType.SUPPORTS)
@@ -83,7 +90,7 @@ public class CartService {
                 });
     }
 
-    public Uni<Cart> getActiveCart(UUID customerId) {
+    public Uni<CartDto> getActiveCart(UUID customerId) {
         return this.cartRepository.findByStatusAndCustomer_Id(CartStatus.NEW, customerId)
                 .onItem().transformToUni(carts -> {
                     if (carts == null || carts.isEmpty())
@@ -95,6 +102,6 @@ public class CartService {
                     return Uni.createFrom().failure(
                             new IllegalStateException("Multiple active carts detected for customer: " + customerId)
                     );
-                });
+                }).onItem().transform(CartService::mapToDto);
     }
 }
