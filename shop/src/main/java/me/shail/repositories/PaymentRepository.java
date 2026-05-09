@@ -1,7 +1,9 @@
 package me.shail.repositories;
 
+
 import io.quarkus.hibernate.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
+import me.shail.dtos.PaymentDto;
 import me.shail.models.Payment;
 import org.hibernate.annotations.processing.HQL;
 
@@ -13,4 +15,12 @@ public interface PaymentRepository extends PanacheRepository.Reactive.Stateless<
 
     @HQL("where amount between :amountMin and :amountMax")
     Uni<List<Payment>> findByAmountBetween(BigDecimal amountMin, BigDecimal amountMax);
+
+    @HQL("select p.id, p.paymentReferenceId, p.status, o.id from Order o join o.payment p where p.amount <= :amountMax")
+    default Uni<List<PaymentDto>> findPaymentDtoByMaxPrice(BigDecimal amountMax) {
+        return find("select p.id, p.paymentReferenceId, p.status, o.id" +
+                " from Order o join o.payment p" +
+                " where p.amount <= :amountMax", amountMax)
+                .project(PaymentDto.class).list();
+    }
 }

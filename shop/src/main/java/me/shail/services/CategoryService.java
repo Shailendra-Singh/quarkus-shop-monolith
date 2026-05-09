@@ -53,7 +53,7 @@ public class CategoryService {
     public Uni<Integer> delete(UUID id) {
         log.debug("Request to delete Category: {}", id);
         log.debug("Deleting all products for the Category: {}", id);
-        return this.productRepository.deleteByCategory_Id(id);
+        return this.productRepository.deleteByCategoryId(id);
     }
 
     public Uni<List<ProductDto>> findProductsByCategoryId(UUID id) {

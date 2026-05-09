@@ -15,8 +15,8 @@ import java.util.Objects;
 @ToString(callSuper = true)
 @Table(name = "payments")
 public class Payment extends AbstractEntity {
-    @Column(name = "payment_id")
-    public String paymentId;
+    @Column(name = "payment_reference_id")
+    public String paymentReferenceId;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -27,8 +27,8 @@ public class Payment extends AbstractEntity {
     @Column(name = "amount", nullable = false)
     public BigDecimal amount;
 
-    public Payment(String paymentId, @NotNull PaymentStatus status, @NotNull BigDecimal amount) {
-        this.paymentId = paymentId;
+    public Payment(String paymentReferenceId, @NotNull PaymentStatus status, @NotNull BigDecimal amount) {
+        this.paymentReferenceId = paymentReferenceId;
         this.status = status;
         this.amount = amount;
     }
@@ -37,11 +37,11 @@ public class Payment extends AbstractEntity {
     public boolean equals(Object obj) {
         if (obj == null || getClass() != obj.getClass()) return false;
         Payment payment = (Payment) obj;
-        return Objects.equals(paymentId, payment.paymentId);
+        return Objects.equals(paymentReferenceId, payment.paymentReferenceId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(paymentId);
+        return Objects.hashCode(paymentReferenceId);
     }
 }

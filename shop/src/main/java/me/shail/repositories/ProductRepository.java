@@ -1,6 +1,5 @@
 package me.shail.repositories;
 
-import com.oracle.svm.core.annotate.Delete;
 import io.quarkus.hibernate.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
 import me.shail.models.Product;
@@ -18,8 +17,11 @@ public interface ProductRepository extends PanacheRepository.Reactive.Stateless<
     Uni<Product> findProductByReview_Id(UUID reviewId);
 
     @HQL("delete from Product where category.id = :categoryId")
-    Uni<Integer> deleteByCategory_Id(UUID categoryId);
+    Uni<Integer> deleteByCategoryId(UUID categoryId);
+//
+//    @HQL("from Product where category.id = :categoryId")
+//    Uni<List<Product>> findByCategory(UUID categoryId);
 
-    @HQL("from Product where category.id = :categoryId")
-    Uni<List<Product>> findByCategory(UUID categoryId);
+    @HQL("select count(distinct p.id) from Product p where p.category.id = :categoryId")
+    Uni<Long> countAllByCategory(UUID categoryId);
 }
