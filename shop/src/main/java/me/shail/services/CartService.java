@@ -77,7 +77,7 @@ public class CartService {
                 .transform(CartService::mapToDto);
     }
 
-    public Uni<Integer> delete(UUID id) {
+    public Uni<Boolean> delete(UUID id) {
         log.debug("Request to delete Cart: {}", id);
         return this.cartRepository.updateStatusById(id, CartStatus.CANCELED)
                 .onItem().transformToUni(rowsAffected -> {
@@ -86,7 +86,7 @@ public class CartService {
                                 new NoSuchElementException("Cannot delete: No Cart found with id:" + id)
                         );
 
-                    return Uni.createFrom().item(rowsAffected);
+                    return Uni.createFrom().item(rowsAffected > 0);
                 });
     }
 

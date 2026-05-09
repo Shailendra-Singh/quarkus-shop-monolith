@@ -1,5 +1,6 @@
 package me.shail.repositories;
 
+import com.oracle.svm.core.annotate.Delete;
 import io.quarkus.hibernate.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
 import me.shail.models.Product;

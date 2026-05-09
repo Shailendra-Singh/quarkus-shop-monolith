@@ -1,4 +1,6 @@
 package me.shail.dtos;
 
-public record CustomerDto() {
+import java.util.UUID;
+
+public record CustomerDto(UUID id, String firstName, String lastName, String email, String telephone) {
 }

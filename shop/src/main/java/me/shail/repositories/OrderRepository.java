@@ -4,6 +4,7 @@ import io.quarkus.hibernate.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
 import me.shail.models.Order;
 import org.hibernate.annotations.processing.Find;
+import org.hibernate.annotations.processing.HQL;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,4 +24,7 @@ public interface OrderRepository extends PanacheRepository.Reactive.Stateless<Or
      */
     @Find
     Uni<Optional<Order>> findByPaymentId(UUID id);
+
+    @HQL("select count(o) > 0 from Order o where o.id = :orderId")
+    Uni<Boolean> existsById(UUID orderId);
 }
