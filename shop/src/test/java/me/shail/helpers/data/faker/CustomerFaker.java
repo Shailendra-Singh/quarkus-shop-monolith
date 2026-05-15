@@ -22,4 +22,8 @@ public final class CustomerFaker {
     public List<CustomerDto> generate(int count) {
         return faker.collection(this::generateCustomer).len(count).generate();
     }
+
+    public CustomerDto generate(){
+        return generateCustomer();
+    }
 }
