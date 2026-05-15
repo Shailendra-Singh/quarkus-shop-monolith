@@ -2,6 +2,7 @@ package me.shail.helpers.data.faker;
 
 import me.shail.dtos.ProductDto;
 import me.shail.helpers.Constants;
+import me.shail.helpers.data.faker.base.EntityDtoFaker;
 import me.shail.models.enums.ProductStatus;
 import net.datafaker.Faker;
 
@@ -9,7 +10,7 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 
-public class ProductFaker {
+public class ProductDtoFaker implements EntityDtoFaker<ProductDto> {
     private final static Faker faker = Constants.FAKER;
 
     private ProductDto generateProduct() {
@@ -23,6 +24,11 @@ public class ProductFaker {
                 Collections.emptySet(),
                 null
         );
+    }
+
+    @Override
+    public ProductDto generate() {
+        return generateProduct();
     }
 
     public List<ProductDto> generate(int count) {

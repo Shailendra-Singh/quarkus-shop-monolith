@@ -2,13 +2,14 @@ package me.shail.helpers.data.faker;
 
 import me.shail.dtos.OrderDto;
 import me.shail.helpers.Constants;
+import me.shail.helpers.data.faker.base.EntityDtoFaker;
 import me.shail.models.enums.OrderStatus;
 import net.datafaker.Faker;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-public final class OrderFaker {
+public final class OrderDtoFaker implements EntityDtoFaker<OrderDto> {
     private final static Faker faker = Constants.FAKER;
 
     private OrderDto generateOrder() {
@@ -23,6 +24,11 @@ public final class OrderFaker {
                 null,
                 null
         );
+    }
+
+    @Override
+    public OrderDto generate() {
+        return generateOrder();
     }
 
     public List<OrderDto> generate(int count) {
