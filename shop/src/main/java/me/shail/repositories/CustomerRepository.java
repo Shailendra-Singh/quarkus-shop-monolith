@@ -1,7 +1,5 @@
 package me.shail.repositories;
 
-
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
@@ -22,17 +20,14 @@ public class CustomerRepository {
     @Inject
     CustomerQueryRepository customerQueryRepository;
 
-    @WithTransaction
     public Uni<Customer> create(Customer customer) {
         return customerCommandRepository.persist(customer).replaceWith(customer);
     }
 
-    @WithTransaction
     public Uni<Boolean> deleteById(UUID customerId) {
         return customerCommandRepository.deleteById(customerId);
     }
 
-    @WithTransaction
     public Uni<Long> disableCustomerById(UUID customerId) {
         return customerCommandRepository.disableCustomerById(customerId);
     }

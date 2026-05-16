@@ -1,9 +1,9 @@
 package me.shail.services;
 
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import me.shail.dtos.CustomerDto;
 import me.shail.models.Customer;
@@ -30,6 +30,7 @@ public class CustomerService {
         );
     }
 
+    @WithTransaction
     public Uni<CustomerDto> create(CustomerDto customerDto) {
         log.debug("Request to create Customer: {}", customerDto);
         var customer = new Customer(
@@ -51,12 +52,14 @@ public class CustomerService {
         log.debug("Request to get all Customers");
         return this.customerRepository.listAll()
                 .onItem()
-                .transformToUni(customers -> {
-                    return Uni.createFrom().item(customers.stream().map(CustomerService::mapToDto).toList());
-                });
+                .transformToUni(customers -> Uni.createFrom()
+                        .item(customers.stream()
+                                .map(CustomerService::mapToDto)
+                                .toList()
+                        )
+                );
     }
 
-    @Transactional
     public Uni<CustomerDto> findById(UUID id) {
         log.debug("Request to get Customer: {}", id);
         return this.customerRepository.findById(id).onItem().transform(CustomerService::mapToDto);
@@ -67,11 +70,17 @@ public class CustomerService {
         log.debug("Request to get all {} customers", status);
         return this.customerRepository.findAllByState(enabled)
                 .onItem()
-                .transformToUni(customers -> {
-                    return Uni.createFrom().item(customers.stream().map(CustomerService::mapToDto).toList());
-                });
+                .transformToUni(customers ->
+                        Uni.createFrom()
+                                .item(customers
+                                        .stream()
+                                        .map(CustomerService::mapToDto)
+                                        .toList()
+                                )
+                );
     }
 
+    @WithTransaction
     public Uni<Boolean> delete(UUID id) {
         log.debug("Request to delete Customer: {}", id);
         return this.customerRepository.disableCustomerById(id)

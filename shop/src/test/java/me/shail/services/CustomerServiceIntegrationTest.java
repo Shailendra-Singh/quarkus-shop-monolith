@@ -59,11 +59,16 @@ public class CustomerServiceIntegrationTest {
                     }
 
                     // Join them. This works because they all branch off the same initial session context
-                    return Uni.join().all(customerUnis).andFailFast().invoke(listOfResults -> {
-                        // 3. Assert
-                        assertEquals(customers.size(), listOfResults.size());
-                    });
+                    return Uni.join().all(customerUnis).andFailFast();
                 }));
+
+        asserter.execute(() ->
+                sessionFactory.withStatelessSession(session ->
+                        customerService.findAll()
+                                .onItem().invoke(listOfResults -> {
+                                    // 3. Assert
+                                    assertEquals(customers.size(), listOfResults.size());
+                                })));
     }
 
     @Test

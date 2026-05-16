@@ -6,7 +6,7 @@ import me.shail.models.Customer;
 
 import java.util.UUID;
 
-public interface CustomerCommandRepository extends PanacheRepository.Reactive<Customer, UUID>{
+public interface CustomerCommandRepository extends PanacheRepository.Reactive<Customer, UUID> {
     /**
      * Disables a customer based on 'enabled' flag
      *
