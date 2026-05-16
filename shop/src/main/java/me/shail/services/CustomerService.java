@@ -62,7 +62,12 @@ public class CustomerService {
 
     public Uni<CustomerDto> findById(UUID id) {
         log.debug("Request to get Customer: {}", id);
-        return this.customerRepository.findById(id).onItem().transform(CustomerService::mapToDto);
+        return this.customerRepository
+                .findByIdStateless(id)
+                .onItem().ifNull().failWith(() ->
+                        new NoSuchElementException("Customer doesn't exist. ID:  " + id)
+                )
+                .onItem().transform(CustomerService::mapToDto);
     }
 
     public Uni<List<CustomerDto>> findAllByState(boolean enabled) {
@@ -87,7 +92,7 @@ public class CustomerService {
                 .onItem().transformToUni(rowsAffected -> {
                     if (rowsAffected == 0)
                         return Uni.createFrom().failure(
-                                new NoSuchElementException("Cannot find Customer with id " + id)
+                                new NoSuchElementException("Customer doesn't exist. ID:  " + id)
                         );
 
                     return Uni.createFrom().item(rowsAffected == 1);
