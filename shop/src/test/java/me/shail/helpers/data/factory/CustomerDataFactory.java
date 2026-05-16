@@ -9,7 +9,7 @@ import java.util.List;
 public final class CustomerDataFactory {
     private final static EntityDtoFaker<CustomerDto> _faker = new CustomerDtoFaker();
 
-    public static CustomerDto generateCustomer(){
+    public static CustomerDto generateCustomer() {
         return _faker.generate();
     }
 
