@@ -11,7 +11,7 @@ public class FakerDataTests {
     @TestTransaction
     void generateFakeCustomers() {
         // arrange
-        var customers = TestDataFactory.generateMockCustomers();
+        var customers = TestDataFactory.generateMockCustomerDtos(10);
         // assert
         assert (customers.size() == 10);
     }

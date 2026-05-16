@@ -1,7 +1,6 @@
 package me.shail.models.base;
 
 
-import io.quarkus.hibernate.panache.PanacheEntityBase;
 import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -13,7 +12,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @MappedSuperclass
-public abstract class AbstractEntity extends PanacheEntityBase {
+public abstract class AbstractEntity {
     @Id
     @GeneratedValue // Hibernate will detect UUID and use a random generator
     @Column(name = "id", updatable = false, nullable = false)

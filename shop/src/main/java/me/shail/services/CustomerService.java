@@ -15,10 +15,8 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Slf4j
-@Transactional
 @ApplicationScoped
 public class CustomerService {
-    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     CustomerRepository customerRepository;
 
@@ -43,13 +41,15 @@ public class CustomerService {
                 Boolean.TRUE
         );
 
-        return this.customerRepository.insert(customer).replaceWith(CustomerService.mapToDto(customer));
+
+        return this.customerRepository.create(customer)
+                .onItem()
+                .transform(CustomerService::mapToDto);
     }
 
     public Uni<List<CustomerDto>> findAll() {
         log.debug("Request to get all Customers");
-        return this.customerRepository.findAll()
-                .list()
+        return this.customerRepository.listAll()
                 .onItem()
                 .transformToUni(customers -> {
                     return Uni.createFrom().item(customers.stream().map(CustomerService::mapToDto).toList());
@@ -65,14 +65,14 @@ public class CustomerService {
     public Uni<List<CustomerDto>> findAllByState(boolean enabled) {
         String status = enabled ? "active" : "inactive";
         log.debug("Request to get all {} customers", status);
-        return this.customerRepository.findAllByEnabled(enabled)
+        return this.customerRepository.findAllByState(enabled)
                 .onItem()
                 .transformToUni(customers -> {
                     return Uni.createFrom().item(customers.stream().map(CustomerService::mapToDto).toList());
                 });
     }
 
-    public Uni<Integer> delete(UUID id) {
+    public Uni<Boolean> delete(UUID id) {
         log.debug("Request to delete Customer: {}", id);
         return this.customerRepository.disableCustomerById(id)
                 .onItem().transformToUni(rowsAffected -> {
@@ -81,7 +81,7 @@ public class CustomerService {
                                 new NoSuchElementException("Cannot find Customer with id " + id)
                         );
 
-                    return Uni.createFrom().item(rowsAffected);
+                    return Uni.createFrom().item(rowsAffected == 1);
                 });
     }
 }

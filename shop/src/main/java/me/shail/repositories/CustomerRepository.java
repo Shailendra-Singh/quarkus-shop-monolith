@@ -1,18 +1,51 @@
 package me.shail.repositories;
 
-import io.quarkus.hibernate.panache.PanacheRepository;
+
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
 import me.shail.models.Customer;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
+import me.shail.repositories.managed.CustomerCommandRepository;
+import me.shail.repositories.stateless.CustomerQueryRepository;
 
 import java.util.List;
 import java.util.UUID;
 
-public interface CustomerRepository extends PanacheRepository.Reactive.Stateless<Customer, UUID> {
-    @Find
-    Uni<List<Customer>> findAllByEnabled(Boolean enabled);
+@Dependent
+public class CustomerRepository {
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    CustomerCommandRepository customerCommandRepository;
 
-    @HQL("update Customer set enabled = false where id = :customerId")
-    Uni<Integer> disableCustomerById(UUID customerId);
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    CustomerQueryRepository customerQueryRepository;
+
+    @WithTransaction
+    public Uni<Customer> create(Customer customer) {
+        return customerCommandRepository.persist(customer).replaceWith(customer);
+    }
+
+    @WithTransaction
+    public Uni<Boolean> deleteById(UUID customerId) {
+        return customerCommandRepository.deleteById(customerId);
+    }
+
+    @WithTransaction
+    public Uni<Long> disableCustomerById(UUID customerId) {
+        return customerCommandRepository.disableCustomerById(customerId);
+    }
+
+    public Uni<List<Customer>> listAll() {
+        return customerQueryRepository.listAll();
+    }
+
+    public Uni<Customer> findById(UUID customerId) {
+        return customerQueryRepository.findById(customerId);
+    }
+
+    public Uni<List<Customer>> findAllByState(boolean enabled) {
+        return customerQueryRepository.findCustomerByEnabled(enabled);
+    }
 }

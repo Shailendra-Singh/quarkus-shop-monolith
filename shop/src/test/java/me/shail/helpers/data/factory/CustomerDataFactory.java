@@ -1,30 +1,19 @@
 package me.shail.helpers.data.factory;
 
 import me.shail.dtos.CustomerDto;
-import me.shail.helpers.data.faker.CustomerFaker;
+import me.shail.helpers.data.faker.CustomerDtoFaker;
+import me.shail.helpers.data.faker.base.EntityDtoFaker;
 
 import java.util.List;
 
 public final class CustomerDataFactory {
-    private final List<CustomerDto> mockCustomers;
+    private final static EntityDtoFaker<CustomerDto> _faker = new CustomerDtoFaker();
 
-    private CustomerDataFactory() {
-        mockCustomers = List.copyOf(loadCustomers());
+    public static CustomerDto generateCustomer(){
+        return _faker.generate();
     }
 
-    public static List<CustomerDto> generateCustomers() {
-        return Holder.INSTANCE.mockCustomers;
-    }
-
-    private static CustomerDataFactory getInstance() {
-        return Holder.INSTANCE;
-    }
-
-    private List<CustomerDto> loadCustomers() {
-        return (new CustomerFaker()).generate(10);
-    }
-
-    private static class Holder {
-        private static final CustomerDataFactory INSTANCE = new CustomerDataFactory();
+    public static List<CustomerDto> generateCustomers(int count) {
+        return _faker.generate(count);
     }
 }
