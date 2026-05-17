@@ -36,8 +36,12 @@ public class CustomerRepository {
         return customerQueryRepository.listAll();
     }
 
-    public Uni<Customer> findById(UUID customerId) {
+    public Uni<Customer> findByIdStateless(UUID customerId) {
         return customerQueryRepository.findById(customerId);
+    }
+
+    public Uni<Customer> findByIdManaged(UUID customerId) {
+        return customerCommandRepository.findById(customerId);
     }
 
     public Uni<List<Customer>> findAllByState(boolean enabled) {
