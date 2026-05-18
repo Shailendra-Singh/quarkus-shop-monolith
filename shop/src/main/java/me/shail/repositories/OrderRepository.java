@@ -1,29 +1,65 @@
 package me.shail.repositories;
 
-import io.quarkus.hibernate.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
 import me.shail.models.Order;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
+import me.shail.repositories.managed.OrderCommandRepository;
+import me.shail.repositories.stateless.OrderQueryRepository;
 
 import java.util.List;
 import java.util.UUID;
 
-public interface OrderRepository extends PanacheRepository.Reactive.Stateless<Order, UUID> {
-    /**
-     * Navigates: Order -> Cart -> Customer -> id
-     * Matches the 'id' field of the Customer entity.
-     */
-    @Find
-    Uni<List<Order>> findByCart_Customer_Id(UUID id);
+@Dependent
+public class OrderRepository {
 
-    /**
-     * Standard find by Payment ID.
-     * Note: Changed from Long to UUID to match your project's identity strategy.
-     */
-    @Find
-    Uni<Order> findByPaymentId(UUID id);
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    OrderCommandRepository orderCommandRepository;
 
-    @HQL("select count(o) > 0 from Order o where o.id = :orderId")
-    Uni<Boolean> existsById(UUID orderId);
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    OrderQueryRepository orderQueryRepository;
+
+    public Uni<Order> create(Order newOrder) {
+        return this.orderCommandRepository
+                .persist(newOrder)
+                .replaceWith(newOrder);
+    }
+
+    public Uni<Boolean> delete(UUID orderId) {
+        return this.orderCommandRepository.deleteById(orderId);
+    }
+
+    public Uni<List<Order>> listAll() {
+        return orderQueryRepository.listAll();
+    }
+
+    public Uni<Order> findById(UUID orderId) {
+        return this.orderQueryRepository.findById(orderId);
+    }
+
+    public Uni<List<Order>> listAllWithSubItems() {
+        return this.orderQueryRepository.listAllWithSubItems();
+    }
+
+    public Uni<Order> findOrderByIdWithOrderItemsManaged(UUID orderId) {
+        return this.orderCommandRepository.findOrderByIdWithSubItems(orderId);
+    }
+
+    public Uni<Order> findOrderByIdWithOrderItemsStateless(UUID orderId) {
+        return this.orderQueryRepository.findOrderByIdWithSubItems(orderId);
+    }
+
+    public Uni<List<Order>> findOrderByCustomerId(UUID customerId) {
+        return this.orderQueryRepository.findOrderByCustomerId(customerId);
+    }
+
+    public Uni<Order> findOrderByPaymentId(UUID paymentId) {
+        return this.orderQueryRepository.findOrderByPaymentId(paymentId);
+    }
+
+    public Uni<Boolean> existsById(UUID orderId) {
+        return this.orderQueryRepository.existsById(orderId);
+    }
 }

@@ -20,6 +20,18 @@ public interface CartCommandRepository extends PanacheRepository.Reactive<Cart, 
     }
 
     /**
+     * Finds carts ID. Fetches the customer with eager loading
+     *
+     * @param cartId: Cart Id
+     * @return Cart with eager loading of Customer
+     */
+    default Uni<Cart> findCartWithCustomer(UUID cartId) {
+        // The "JOIN FETCH" forces Hibernate to load the customer in the initial query
+        return find("FROM Cart c LEFT JOIN FETCH c.customer WHERE c.id = ?1", cartId)
+                .firstResult();
+    }
+
+    /**
      * Finds carts by status and the ID of the associated customer.
      *
      * @param status:     CartStatus

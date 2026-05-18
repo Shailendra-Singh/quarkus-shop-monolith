@@ -10,6 +10,7 @@ import me.shail.models.enums.OrderStatus;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
@@ -40,7 +41,7 @@ public class Order extends AbstractEntity {
     public Address shipmentAddress;
 
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
-    public Set<OrderItem> orderItems;
+    public Set<OrderItem> orderItems = Collections.emptySet();
 
     @OneToOne
     public Cart cart;

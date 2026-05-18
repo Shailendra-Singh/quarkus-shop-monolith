@@ -1,37 +1,33 @@
 package me.shail.helpers.data.faker;
 
+import me.shail.dtos.CartDto;
 import me.shail.dtos.OrderDto;
 import me.shail.helpers.Constants;
-import me.shail.helpers.data.faker.base.EntityDtoFaker;
-import me.shail.models.enums.OrderStatus;
 import net.datafaker.Faker;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.time.ZoneOffset;
+import java.util.Collections;
 
-public final class OrderDtoFaker implements EntityDtoFaker<OrderDto> {
+public final class OrderDtoFaker {
     private final static Faker faker = Constants.FAKER;
+    private final static AddressDtoFaker addressFaker = new AddressDtoFaker();
 
-    private OrderDto generateOrder() {
+    private OrderDto generateOrder(CartDto cartDto) {
         return new OrderDto(
                 null,
                 BigDecimal.valueOf(faker.number().randomDouble(2, 10, 1000)),
-                faker.options().nextElement(OrderStatus.values()).toString(),
+                null,
                 faker.timeAndDate().past(30,
-                        java.util.concurrent.TimeUnit.DAYS).atZone(java.time.ZoneId.systemDefault()),
+                        java.util.concurrent.TimeUnit.DAYS).atZone(ZoneOffset.UTC),
                 null,
-                null,
-                null,
-                null
+                addressFaker.generate(),
+                Collections.emptySet(),
+                cartDto
         );
     }
 
-    @Override
-    public OrderDto generate() {
-        return generateOrder();
-    }
-
-    public List<OrderDto> generate(int count) {
-        return faker.collection(this::generateOrder).len(count).generate();
+    public OrderDto generate(CartDto cartDto) {
+        return generateOrder(cartDto);
     }
 }
