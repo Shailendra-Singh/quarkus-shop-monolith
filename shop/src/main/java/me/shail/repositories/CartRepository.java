@@ -45,8 +45,12 @@ public class CartRepository {
         return cartCommandRepository.findById(customerId);
     }
 
-    public Uni<Cart> findCartWithCustomer(UUID cartId) {
+    public Uni<Cart> findCartWithCustomerStateless(UUID cartId) {
         return cartQueryRepository.findCartWithCustomer(cartId);
+    }
+
+    public Uni<Cart> findCartWithCustomerManaged(UUID cartId) {
+        return cartCommandRepository.findCartWithCustomer(cartId);
     }
 
     public Uni<List<Cart>> findCartByStatus(CartStatus status) {

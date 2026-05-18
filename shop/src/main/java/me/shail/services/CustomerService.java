@@ -4,6 +4,7 @@ import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import me.shail.dtos.CustomerDto;
 import me.shail.models.Customer;
@@ -97,5 +98,19 @@ public class CustomerService {
 
                     return Uni.createFrom().item(rowsAffected == 1);
                 });
+    }
+
+    public static Uni<Customer> generateUni_FindCustomerById(CustomerRepository repository,
+                                                             UUID customerId,
+                                                             boolean managed) {
+        Uni<Customer> generatedUni;
+        if (managed)
+            generatedUni = repository.findByIdManaged(customerId);
+        else
+            generatedUni = repository.findByIdStateless(customerId);
+        return generatedUni
+                .onItem()
+                .ifNull()
+                .failWith(new EntityNotFoundException("The Customer does not exist!"));
     }
 }

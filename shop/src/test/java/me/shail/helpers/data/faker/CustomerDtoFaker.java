@@ -2,12 +2,11 @@ package me.shail.helpers.data.faker;
 
 import me.shail.dtos.CustomerDto;
 import me.shail.helpers.Constants;
-import me.shail.helpers.data.faker.base.EntityDtoFaker;
 import net.datafaker.Faker;
 
 import java.util.List;
 
-public final class CustomerDtoFaker implements EntityDtoFaker<CustomerDto> {
+public final class CustomerDtoFaker {
     private final static Faker faker = Constants.FAKER;
 
     private CustomerDto generateCustomer() {

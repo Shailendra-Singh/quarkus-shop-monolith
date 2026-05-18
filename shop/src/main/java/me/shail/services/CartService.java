@@ -7,7 +7,6 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import me.shail.dtos.CartDto;
 import me.shail.models.Cart;
-import me.shail.models.Customer;
 import me.shail.models.enums.CartStatus;
 import me.shail.repositories.CartRepository;
 import me.shail.repositories.CustomerRepository;
@@ -52,7 +51,7 @@ public class CartService {
     }
 
     public Uni<CartDto> create(UUID customerId) {
-        return generateUni_FindCustomerById(customerId, true)
+        return CustomerService.generateUni_FindCustomerById(this.customerRepository, customerId, true)
                 .chain(customer ->
                         generateUni_FindCartByStatusAndCustomer(customer.id, true)
                                 .onItem().ifNotNull().failWith(() -> new IllegalStateException("Active cart already exists."))
@@ -68,8 +67,7 @@ public class CartService {
 
     public Uni<CartDto> findById(UUID id) {
         log.debug("Request to get Cart: {}", id);
-        return this.cartRepository.findCartWithCustomer(id)
-                .onItem().ifNull().failWith(() -> new EntityNotFoundException("The Cart does not exist!"))
+        return generateUni_FindCartWithCustomer(id, false)
                 .onItem().transform(CartService::mapToDto);
     }
 
@@ -92,21 +90,21 @@ public class CartService {
     }
 
     private Uni<Cart> genearateUni_GetActiveCart(UUID customerId, boolean managed) {
-        return generateUni_FindCustomerById(customerId, managed)
+        return CustomerService.generateUni_FindCustomerById(this.customerRepository, customerId, managed)
                 .chain(_ ->
                         generateUni_FindCartByStatusAndCustomer(customerId, managed));
     }
 
-    private Uni<Customer> generateUni_FindCustomerById(UUID customerId, boolean managed) {
-        Uni<Customer> generatedUni;
+    public Uni<Cart> generateUni_FindCartWithCustomer(UUID cartId, boolean managed) {
+        Uni<Cart> generatedUni;
         if (managed)
-            generatedUni = this.customerRepository.findByIdManaged(customerId);
+            generatedUni = cartRepository.findCartWithCustomerManaged(cartId);
         else
-            generatedUni = this.customerRepository.findByIdStateless(customerId);
-        return generatedUni
-                .onItem()
-                .ifNull()
-                .failWith(new EntityNotFoundException("The Customer does not exist!"));
+            generatedUni = cartRepository.findCartWithCustomerStateless(cartId);
+
+        return generatedUni.onItem().ifNull().failWith(() ->
+                new EntityNotFoundException("The Cart does not exist! Id: " + cartId)
+        );
     }
 
     private Uni<Cart> generateUni_FindCartByStatusAndCustomer(UUID customerId, boolean managed) {

@@ -2,12 +2,11 @@ package me.shail.helpers.data.faker;
 
 import me.shail.dtos.AddressDto;
 import me.shail.helpers.Constants;
-import me.shail.helpers.data.faker.base.EntityDtoFaker;
 import net.datafaker.Faker;
 
 import java.util.List;
 
-public final class AddressDtoDtoFaker implements EntityDtoFaker<AddressDto> {
+public final class AddressDtoFaker {
     private final static Faker faker = Constants.FAKER;
 
     private AddressDto generateAddress() {
@@ -20,7 +19,6 @@ public final class AddressDtoDtoFaker implements EntityDtoFaker<AddressDto> {
         );
     }
 
-    @Override
     public AddressDto generate() {
         return generateAddress();
     }
