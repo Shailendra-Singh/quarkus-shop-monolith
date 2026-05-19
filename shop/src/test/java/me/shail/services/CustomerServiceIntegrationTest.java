@@ -1,16 +1,13 @@
 package me.shail.services;
 
-import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import me.shail.dtos.CustomerDto;
 import me.shail.helpers.data.TestDataFactory;
 import me.shail.repositories.CustomerRepository;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -31,14 +28,10 @@ public class CustomerServiceIntegrationTest {
     @Inject
     CustomerRepository customerRepository;
 
-    @SuppressWarnings("CdiInjectionPointsInspection")
-    @Inject
-    Mutiny.SessionFactory sessionFactory;
-
     // --| 1. Create Customer - Tests |---------------------------------------------------------------------------------
 
     @Test
-    @TestReactiveTransaction
+    @RunOnVertxContext
     public void testCreate(UniAsserter asserter) {
         // 1. Prepare the Input DTO
         CustomerDto inputDto = TestDataFactory.generateMockCustomerDto();
@@ -64,7 +57,7 @@ public class CustomerServiceIntegrationTest {
         // 1. Arrange
         var customers = TestDataFactory.generateMockCustomerDtos(5);
 
-        AtomicReference<List<CustomerDto>> createdCustomers = new AtomicReference<>();
+        List<CustomerDto> createdCustomers = new ArrayList<>();
 
         // 2. Act
         asserter.execute(() ->
@@ -76,26 +69,20 @@ public class CustomerServiceIntegrationTest {
 
         // 3. Assert
         asserter.execute(() ->
-                sessionFactory.withStatelessSession(_ ->
                         customerService.findAll()
                                 .onItem().invoke(listOfResults -> {
-                                    createdCustomers.set(listOfResults);
+                                    createdCustomers.addAll(listOfResults);
                                     assertEquals(customers.size(), listOfResults.size());
                                 })
-                )
+
         );
 
         // Clean up
-        asserter.execute(() ->
-                sessionFactory.withSession(_ ->
-                        Multi.createFrom().iterable(createdCustomers.get())
-                                .onItem()
-                                .transformToUniAndConcatenate(customer ->
-                                        customerRepository.deleteById(customer.id()
-                                        )
-                                ).collect().asList()
-                )
-        );
+        for (var createdCustomer : createdCustomers) {
+            asserter.execute(() -> customerRepository
+                    .deleteById(createdCustomer.id())
+                    .invoke(Assertions::assertTrue));
+        }
     }
 
     @Test
@@ -108,22 +95,19 @@ public class CustomerServiceIntegrationTest {
 
         // 1.b Create customer
         asserter.execute(() ->
-                sessionFactory.withSession(_ ->
                         customerService.create(inputDto).invoke(
                                 createdCustomer::set
-                        )
                 ));
 
         // 2.a Find the customer with id and check
         asserter.execute(() ->
-                sessionFactory.withStatelessSession(_ ->
                         customerService
                                 .findById(createdCustomer.get().id())
                                 .invoke(returnedCustomer -> {
                                     assertNotNull(returnedCustomer);
                                     assertEquals(createdCustomer.get(), returnedCustomer);
                                 })
-                ));
+        );
     }
 
     @Test
@@ -135,11 +119,10 @@ public class CustomerServiceIntegrationTest {
 
         // 2.a Find the customer with id and check
         asserter.assertFailedWith(() ->
-                sessionFactory.withStatelessSession(_ ->
                         customerService
                                 .findById(nonExistentId)
                                 .invoke(Assertions::assertNotNull)
-                ), throwable -> {
+                , throwable -> {
             assertNotNull(throwable);
             assertEquals(NoSuchElementException.class, throwable.getClass());
             assertTrue(throwable.getMessage().toLowerCase().contains("doesn't exist"));
@@ -149,58 +132,46 @@ public class CustomerServiceIntegrationTest {
     @Test
     @RunOnVertxContext
     public void testFindAllByState(UniAsserter asserter) {
-        //  1.a Generate 10 customers
+        // 1.a Generate 10 customers
         var customers = TestDataFactory.generateMockCustomerDtos(10);
+        List<UUID> deletedCustomerIds = new ArrayList<>();
 
-        asserter.execute(() ->
-                sessionFactory.withSession(_ -> {
+        // 2.a Create 10 customers
+        for (var customer : customers) {
+            asserter.execute(() -> customerService
+                    .create(customer)
+                    .invoke(createdCustomer -> deletedCustomerIds.add(createdCustomer.id()))
+            );
+        }
 
-                    // 2.a Create 10 customers
-                    List<Uni<CustomerDto>> createdCustomerUnis = new ArrayList<>();
-                    for (var customer : customers) {
-                        createdCustomerUnis.add(customerService.create(customer));
-                    }
-
-                    return Uni.join().all(createdCustomerUnis).andFailFast().chain(listOfResults -> {
-                        // 2.b Delete 4 customers
-                        List<Uni<Boolean>> deleteCustomerUnis = new ArrayList<>();
-                        for (int i = 0; i < listOfResults.size(); i++) {
-                            var customer = listOfResults.get(i);
-                            // 2.c Create 4 delete streams
-                            if (i < 4)
-                                deleteCustomerUnis.add(customerService.delete(customer.id()));
-                        }
-
-                        // 2.d find customers by state: enabled = false
-                        return Uni.join().all(deleteCustomerUnis).andFailFast();
-
-                    });
-                }));
+        // 2.c Delete 4 customers
+        for (int i = 0; i < 4; i++) {
+            int finalI = i;
+            asserter.execute(() -> customerService.delete(deletedCustomerIds.get(finalI)));
+        }
 
         // 3.a Find the customer with disabled status
         asserter.execute(() ->
-                sessionFactory.withStatelessSession(_ ->
                         customerService.findAllByState(false)
                                 .invoke(returnedCustomers -> {
                                     // 3.b assert 4 deleted customers
                                     assertNotNull(returnedCustomers);
                                     assertEquals(4, returnedCustomers.size());
                                 })
-                ));
+        );
     }
 
     @Test
     @RunOnVertxContext
     public void testFindAllByState_WhenNoCustomersExist(UniAsserter asserter) {
         asserter.execute(() ->
-                sessionFactory.withStatelessSession(_ ->
                         customerService.findAllByState(false)
                                 .invoke(returnedCustomers -> {
                                     // 3.b assert 4 deleted customers
                                     assertNotNull(returnedCustomers);
                                     assertEquals(0, returnedCustomers.size());
                                 })
-                ));
+        );
     }
 
     // --| 3. Delete Customer - Tests |---------------------------------------------------------------------------------
@@ -211,14 +182,13 @@ public class CustomerServiceIntegrationTest {
         // 1. Prepare the Input DTO
         CustomerDto inputDto = TestDataFactory.generateMockCustomerDto();
 
-        asserter.execute(() -> sessionFactory.withSession(_ ->
+        asserter.execute(() ->
                         customerService.create(inputDto)
                                 .chain(createdCustomer -> {
                                     // Assertions
                                     return customerService.delete(createdCustomer.id())
                                             .invoke(Assertions::assertTrue);
                                 })
-                )
         );
     }
 
@@ -228,11 +198,10 @@ public class CustomerServiceIntegrationTest {
         // Prepare the Input id
         UUID nonExistentId = UUID.randomUUID();
 
-        asserter.assertFailedWith(() -> sessionFactory.withSession(_ ->
+        asserter.assertFailedWith(() ->
                         // Assertions
                         customerService.delete(nonExistentId)
                                 .invoke(Assertions::assertTrue)
-                )
                 , throwable -> {
                     assertEquals(NoSuchElementException.class, throwable.getClass());
                     assertTrue(throwable.getMessage().toLowerCase().contains("doesn't exist"));

@@ -7,6 +7,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import me.shail.dtos.CustomerDto;
+import me.shail.interceptors.WithCustomStatelessSession;
 import me.shail.models.Customer;
 import me.shail.repositories.CustomerRepository;
 
@@ -49,6 +50,7 @@ public class CustomerService {
                 .transform(CustomerService::mapToDto);
     }
 
+    @WithCustomStatelessSession
     public Uni<List<CustomerDto>> findAll() {
         log.debug("Request to get all Customers");
         return this.customerRepository.listAll()
@@ -61,6 +63,7 @@ public class CustomerService {
                 );
     }
 
+    @WithCustomStatelessSession
     public Uni<CustomerDto> findById(UUID id) {
         log.debug("Request to get Customer: {}", id);
         return this.customerRepository
@@ -71,6 +74,7 @@ public class CustomerService {
                 .onItem().transform(CustomerService::mapToDto);
     }
 
+    @WithCustomStatelessSession
     public Uni<List<CustomerDto>> findAllByState(boolean enabled) {
         String status = enabled ? "active" : "inactive";
         log.debug("Request to get all {} customers", status);

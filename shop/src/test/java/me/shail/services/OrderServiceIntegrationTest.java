@@ -10,7 +10,6 @@ import me.shail.dtos.CustomerDto;
 import me.shail.dtos.OrderDto;
 import me.shail.helpers.data.TestDataFactory;
 import me.shail.models.enums.OrderStatus;
-import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -23,9 +22,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 public class OrderServiceIntegrationTest {
-    @SuppressWarnings("CdiInjectionPointsInspection")
-    @Inject
-    Mutiny.SessionFactory sessionFactory;
 
     @Inject
     OrderService orderService;
@@ -46,10 +42,7 @@ public class OrderServiceIntegrationTest {
         OrderDto mockOrderDto = TestDataFactory.generateMockOrderDto(mockCartDto);
 
 
-        asserter.assertFailedWith(() ->
-                        sessionFactory.withTransaction(_ ->
-                                orderService.create(mockOrderDto)
-                        )
+        asserter.assertFailedWith(() -> orderService.create(mockOrderDto)
                 , throwable -> {
                     assertNotNull(throwable);
                     assertEquals(EntityNotFoundException.class, throwable.getClass());
@@ -64,32 +57,26 @@ public class OrderServiceIntegrationTest {
         var inputDto = TestDataFactory.generateMockCustomerDto();
         AtomicReference<CustomerDto> createdCustomer = new AtomicReference<>();
 
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        customerService.create(inputDto)
+        asserter.execute(() -> customerService.create(inputDto)
                                 .onItem()
                                 .invoke(createdCustomer::set)
-                )
         );
 
         // 1.b Create Cart associated with the customer
         AtomicReference<CartDto> createdCart = new AtomicReference<>();
         AtomicReference<OrderDto> orderDto = new AtomicReference<>();
 
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        cartService.create(createdCustomer.get().id())
+        asserter.execute(() -> cartService.create(createdCustomer.get().id())
                                 .invoke(result -> {
                                     createdCart.set(result);
                                     // 1.c Prepare the Input DTO
                                     OrderDto mockOrderDto = TestDataFactory.generateMockOrderDto(result);
                                     orderDto.set(mockOrderDto);
                                 })
-                ));
+        );
 
 
         asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
                         orderService.create(orderDto.get())
                                 .onItem()
                                 .invoke(result -> {
@@ -101,7 +88,6 @@ public class OrderServiceIntegrationTest {
                                             assertEquals(OrderStatus.CREATION.name(), result.status());
                                         }
                                 )
-                )
         );
     }
 
@@ -110,14 +96,7 @@ public class OrderServiceIntegrationTest {
     @Test
     @RunOnVertxContext
     public void testExistsById_WhenOrderDoesNotExist(UniAsserter asserter) {
-        // 1.a Fake order id
-        UUID fakeOrderId = UUID.randomUUID();
-
-        asserter.execute(() ->
-                sessionFactory.withStatelessSession(_ ->
-                        orderService.existsById(fakeOrderId).invoke(Assertions::assertFalse)
-                )
-        );
+        asserter.execute(() -> orderService.existsById(UUID.randomUUID()).invoke(Assertions::assertFalse));
     }
 
     @Test
@@ -127,41 +106,30 @@ public class OrderServiceIntegrationTest {
         var inputDto = TestDataFactory.generateMockCustomerDto();
         AtomicReference<CustomerDto> createdCustomer = new AtomicReference<>();
 
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        customerService.create(inputDto)
+        asserter.execute(() -> customerService.create(inputDto)
                                 .onItem()
                                 .invoke(createdCustomer::set)
-                )
         );
 
         // 1.b Create Cart associated with the customer
         AtomicReference<OrderDto> orderDto = new AtomicReference<>();
 
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        cartService.create(createdCustomer.get().id())
+        asserter.execute(() -> cartService.create(createdCustomer.get().id())
                                 .invoke(result -> {
                                     // 1.c Prepare the Input DTO
                                     OrderDto mockOrderDto = TestDataFactory.generateMockOrderDto(result);
                                     orderDto.set(mockOrderDto);
                                 })
-                ));
+        );
 
         // 1.c Create order
         AtomicReference<OrderDto> createdOrder = new AtomicReference<>();
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        orderService.create(orderDto.get()).invoke(createdOrder::set)
-                )
+        asserter.execute(() -> orderService.create(orderDto.get()).invoke(createdOrder::set)
         );
 
         // 2. Act and Assert
-        asserter.execute(() ->
-                sessionFactory.withStatelessSession(_ ->
-                        orderService.existsById(createdOrder.get().id())
+        asserter.execute(() -> orderService.existsById(createdOrder.get().id())
                                 .invoke(Assertions::assertTrue)
-                )
         );
     }
 
@@ -171,10 +139,7 @@ public class OrderServiceIntegrationTest {
         // 1.a Fake order id
         UUID fakeOrderId = UUID.randomUUID();
 
-        asserter.assertFailedWith(() ->
-                        sessionFactory.withStatelessSession(_ ->
-                                orderService.findById(fakeOrderId)
-                        )
+        asserter.assertFailedWith(() -> orderService.findById(fakeOrderId)
                 , throwable -> {
                     assertNotNull(throwable);
                     assertEquals(EntityNotFoundException.class, throwable.getClass());
@@ -189,45 +154,35 @@ public class OrderServiceIntegrationTest {
         var inputDto = TestDataFactory.generateMockCustomerDto();
         AtomicReference<CustomerDto> createdCustomer = new AtomicReference<>();
 
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        customerService.create(inputDto)
+        asserter.execute(() -> customerService.create(inputDto)
                                 .onItem()
                                 .invoke(createdCustomer::set)
-                )
         );
 
         // 1.b Create Cart associated with the customer
         AtomicReference<OrderDto> orderDto = new AtomicReference<>();
 
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        cartService.create(createdCustomer.get().id())
+        asserter.execute(() -> cartService.create(createdCustomer.get().id())
                                 .invoke(result -> {
                                     // 1.c Prepare the Input DTO
                                     OrderDto mockOrderDto = TestDataFactory.generateMockOrderDto(result);
                                     orderDto.set(mockOrderDto);
                                 })
-                ));
+        );
 
         // 1.c Create order
         AtomicReference<OrderDto> createdOrder = new AtomicReference<>();
         asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
                         orderService.create(orderDto.get()).invoke(createdOrder::set)
-                )
         );
 
         // 2. Act and Assert
-        asserter.execute(() ->
-                sessionFactory.withStatelessSession(_ ->
-                        orderService.findById(createdOrder.get().id())
+        asserter.execute(() -> orderService.findById(createdOrder.get().id())
                                 .invoke(result -> {
                                     assertNotNull(result);
                                     assertNotNull(result.id());
                                     assertEquals(createdOrder.get(), result);
                                 })
-                )
         );
     }
 
@@ -238,43 +193,35 @@ public class OrderServiceIntegrationTest {
         var inputDto = TestDataFactory.generateMockCustomerDto();
         AtomicReference<CustomerDto> createdCustomer = new AtomicReference<>();
 
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        customerService.create(inputDto)
+        asserter.execute(() -> customerService.create(inputDto)
                                 .onItem()
                                 .invoke(createdCustomer::set)
-                )
         );
 
         // 1.b Create Cart associated with the customer
         AtomicReference<OrderDto> orderDto = new AtomicReference<>();
 
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        cartService.create(createdCustomer.get().id())
+        asserter.execute(() -> cartService.create(createdCustomer.get().id())
                                 .invoke(result -> {
                                     // 1.c Prepare the Input DTO
                                     OrderDto mockOrderDto = TestDataFactory.generateMockOrderDto(result);
                                     orderDto.set(mockOrderDto);
                                 })
-                ));
+        );
 
         // 1.c Create order
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        orderService.create(orderDto.get())
-                )
+        asserter.execute(() -> orderService.create(orderDto.get())
         );
 
         // 2. Act and Assert
         asserter.execute(() ->
-                sessionFactory.withStatelessSession(_ ->
+//                sessionFactory.withStatelessSession(_ ->
                         orderService.listAll()
                                 .invoke(result -> {
                                     assertNotNull(result);
                                     assertFalse(result.isEmpty());
                                 })
-                )
+//                )
         );
     }
 
@@ -285,10 +232,8 @@ public class OrderServiceIntegrationTest {
         UUID nonExistentCustomerId = UUID.randomUUID();
 
         // 2. Act and Assert
-        asserter.assertFailedWith(() ->
-                        sessionFactory.withStatelessSession(_ ->
-                                orderService.findAllByCustomer(nonExistentCustomerId)
-                        )
+        asserter.assertFailedWith(() -> orderService.findAllByCustomer(nonExistentCustomerId)
+
                 , throwable -> {
                     assertNotNull(throwable);
                     assertEquals(EntityNotFoundException.class, throwable.getClass());
@@ -303,20 +248,16 @@ public class OrderServiceIntegrationTest {
         var inputDto = TestDataFactory.generateMockCustomerDto();
         AtomicReference<CustomerDto> createdCustomer = new AtomicReference<>();
 
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        customerService.create(inputDto)
+        asserter.execute(() -> customerService.create(inputDto)
                                 .onItem()
                                 .invoke(createdCustomer::set)
-                )
+
         );
 
         // 1.b Create Cart associated with the customer
         List<OrderDto> orderDtoList = new ArrayList<>();
 
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        cartService.create(createdCustomer.get().id())
+        asserter.execute(() -> cartService.create(createdCustomer.get().id())
                                 .invoke(result -> {
                                     // 1.c Create multiple orders
                                     for (int i = 0; i < 3; i++) {
@@ -324,28 +265,23 @@ public class OrderServiceIntegrationTest {
                                         orderDtoList.add(mockOrderDto);
                                     }
                                 })
-                ));
+        );
 
         // 1.c Create order
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        orderService.create(orderDtoList.getFirst())
+        asserter.execute(() -> orderService.create(orderDtoList.getFirst())
                                 .chain(_ -> orderService.create(orderDtoList.get(1)))
                                 .chain(_ -> orderService.create(orderDtoList.get(2)))
-                )
+
         );
 
         // 2. Act and Assert
-        asserter.execute(() ->
-                sessionFactory.withStatelessSession(_ ->
-                        orderService.findAllByCustomer(createdCustomer.get().id())
+        asserter.execute(() -> orderService.findAllByCustomer(createdCustomer.get().id())
                                 .invoke(result -> {
                                     assertNotNull(result);
                                     assertFalse(result.isEmpty());
                                     // Should have 3 orders
                                     assertEquals(3, result.size());
                                 })
-                )
         );
     }
 
@@ -357,10 +293,7 @@ public class OrderServiceIntegrationTest {
         UUID nonExistentOrderId = UUID.randomUUID();
 
         // 2. Act and Assert
-        asserter.assertFailedWith(() ->
-                        sessionFactory.withTransaction(_ ->
-                                orderService.delete(nonExistentOrderId)
-                        )
+        asserter.assertFailedWith(() -> orderService.delete(nonExistentOrderId)
                 , throwable -> {
                     assertNotNull(throwable);
                     assertEquals(EntityNotFoundException.class, throwable.getClass());
@@ -376,43 +309,33 @@ public class OrderServiceIntegrationTest {
         AtomicReference<CustomerDto> createdCustomer = new AtomicReference<>();
 
         asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
                         customerService.create(inputDto)
                                 .onItem()
                                 .invoke(createdCustomer::set)
-                )
         );
 
         // 1.b Create Cart associated with the customer
         AtomicReference<OrderDto> orderDto = new AtomicReference<>();
 
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        cartService.create(createdCustomer.get().id())
+        asserter.execute(() -> cartService.create(createdCustomer.get().id())
                                 .invoke(result -> {
                                     // 1.c Prepare the Input DTO
                                     OrderDto mockOrderDto = TestDataFactory.generateMockOrderDto(result);
                                     orderDto.set(mockOrderDto);
                                 })
-                ));
+        );
 
         // 1.c Create order
         AtomicReference<OrderDto> createdOrder = new AtomicReference<>();
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        orderService.create(orderDto.get()).invoke(createdOrder::set)
-                )
+        asserter.execute(() -> orderService.create(orderDto.get()).invoke(createdOrder::set)
         );
 
         // 2. Act and Assert
-        asserter.execute(() ->
-                sessionFactory.withTransaction(_ ->
-                        orderService.delete(createdOrder.get().id())
+        asserter.execute(() -> orderService.delete(createdOrder.get().id())
                                 .invoke(result -> {
                                     assertNotNull(result);
                                     assertTrue(result);
                                 })
-                )
         );
 
         // TODO: check for deleted payments once payment service is created

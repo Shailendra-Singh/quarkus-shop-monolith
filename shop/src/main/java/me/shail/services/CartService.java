@@ -1,11 +1,13 @@
 package me.shail.services;
 
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import me.shail.dtos.CartDto;
+import me.shail.interceptors.WithCustomStatelessSession;
 import me.shail.models.Cart;
 import me.shail.models.enums.CartStatus;
 import me.shail.repositories.CartRepository;
@@ -31,6 +33,7 @@ public class CartService {
         );
     }
 
+    @WithCustomStatelessSession
     public Uni<List<CartDto>> listAll() {
         log.debug("Request to get all Carts");
         return this.cartRepository.listAll()
@@ -41,6 +44,7 @@ public class CartService {
                 );
     }
 
+    @WithCustomStatelessSession
     public Uni<List<CartDto>> findAllActiveCarts() {
         log.debug("Request to get all 'active' Carts");
         return this.cartRepository.findCartByStatus(CartStatus.NEW)
@@ -50,6 +54,7 @@ public class CartService {
                         .collect(Collectors.toList()));
     }
 
+    @WithTransaction
     public Uni<CartDto> create(UUID customerId) {
         return CustomerService.generateUni_FindCustomerById(this.customerRepository, customerId, true)
                 .chain(customer ->
@@ -65,12 +70,14 @@ public class CartService {
                                 }));
     }
 
+    @WithCustomStatelessSession
     public Uni<CartDto> findById(UUID id) {
         log.debug("Request to get Cart: {}", id);
         return generateUni_FindCartWithCustomer(id, false)
                 .onItem().transform(CartService::mapToDto);
     }
 
+    @WithTransaction
     public Uni<Boolean> delete(UUID id) {
         log.debug("Request to delete Cart: {}", id);
         return this.cartRepository.updateStatusById(CartStatus.CANCELED, id)
@@ -84,6 +91,7 @@ public class CartService {
                 });
     }
 
+    @WithCustomStatelessSession
     public Uni<CartDto> getActiveCart(UUID customerId, boolean managed) {
         return genearateUni_GetActiveCart(customerId, managed).onItem()
                 .transform(CartService::mapToDto);

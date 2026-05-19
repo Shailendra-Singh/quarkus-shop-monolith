@@ -1,14 +1,15 @@
 package me.shail.services;
 
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import me.shail.dtos.OrderDto;
 import me.shail.dtos.OrderItemDto;
+import me.shail.interceptors.WithCustomStatelessSession;
 import me.shail.models.Address;
 import me.shail.models.Order;
 import me.shail.models.enums.OrderStatus;
@@ -22,7 +23,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Transactional
 @Slf4j
 @ApplicationScoped
 public class OrderService {
@@ -58,6 +58,7 @@ public class OrderService {
         );
     }
 
+    @WithCustomStatelessSession
     public Uni<List<OrderDto>> listAll() {
         log.debug("Request to get all Orders");
         return this.orderRepository.listAllWithSubItems().onItem()
@@ -68,12 +69,14 @@ public class OrderService {
                         ));
     }
 
+    @WithCustomStatelessSession
     public Uni<OrderDto> findById(UUID orderId) {
         log.debug("Request to get Order: {}", orderId);
         return generateUni_FindById(orderId, false)
                 .map(OrderService::mapToDto);
     }
 
+    @WithCustomStatelessSession
     public Uni<List<OrderDto>> findAllByCustomer(UUID customerId) {
         return CustomerService.generateUni_FindCustomerById(customerRepository, customerId, false)
                 .chain(_ ->
@@ -88,6 +91,7 @@ public class OrderService {
 
     }
 
+    @WithTransaction
     public Uni<OrderDto> create(OrderDto orderDto) {
         log.debug("Request to create Order: {}", orderDto);
         UUID cartId = orderDto.cart().id();
@@ -107,6 +111,7 @@ public class OrderService {
                 }).onItem().transform(OrderService::mapToDto);
     }
 
+    @WithTransaction
     public Uni<Boolean> delete(UUID orderId) {
         log.debug("Request to delete Order: {}", orderId);
         return generateUni_FindById(orderId, true)
@@ -122,6 +127,7 @@ public class OrderService {
                 });
     }
 
+    @WithCustomStatelessSession
     public Uni<Boolean> existsById(UUID id) {
         return this.orderRepository.existsById(id);
     }
