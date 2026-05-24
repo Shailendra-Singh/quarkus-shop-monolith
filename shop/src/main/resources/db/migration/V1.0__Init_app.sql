@@ -50,7 +50,6 @@ CREATE TABLE orders
     total_price        DECIMAL(10, 2)              NOT NULL,
     status             VARCHAR(255)                NOT NULL,
     shipped            TIMESTAMP WITHOUT TIME ZONE,
-    payment_id         UUID,
     cart_id            UUID,
     address_1          VARCHAR(255),
     address_2          VARCHAR(255),
@@ -62,12 +61,14 @@ CREATE TABLE orders
 
 CREATE TABLE payments
 (
-    id                 UUID                        NOT NULL,
-    created_date       TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    last_modified_date TIMESTAMP WITHOUT TIME ZONE,
-    payment_id         VARCHAR(255),
-    status             VARCHAR(255)                NOT NULL,
-    amount             DECIMAL                     NOT NULL,
+    id                   UUID                        NOT NULL,
+    created_date         TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    last_modified_date   TIMESTAMP WITHOUT TIME ZONE,
+    order_id             UUID                        NOT NULL,
+    payment_reference_id VARCHAR(255)                NOT NULL,
+    created_at           TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    status               VARCHAR(255)                NOT NULL,
+    amount               DECIMAL                     NOT NULL,
     CONSTRAINT pk_payments PRIMARY KEY (id)
 );
 
@@ -97,8 +98,8 @@ CREATE TABLE reviews
     CONSTRAINT pk_reviews PRIMARY KEY (id)
 );
 
-ALTER TABLE orders
-    ADD CONSTRAINT uc_orders_payment UNIQUE (payment_id);
+ALTER TABLE payments
+    ADD CONSTRAINT uc_payments_payment_reference UNIQUE (payment_reference_id);
 
 ALTER TABLE carts
     ADD CONSTRAINT FK_CARTS_ON_CUSTOMER FOREIGN KEY (customer_id) REFERENCES customers (id);
@@ -106,14 +107,14 @@ ALTER TABLE carts
 ALTER TABLE orders
     ADD CONSTRAINT FK_ORDERS_ON_CART FOREIGN KEY (cart_id) REFERENCES carts (id);
 
-ALTER TABLE orders
-    ADD CONSTRAINT FK_ORDERS_ON_PAYMENT FOREIGN KEY (payment_id) REFERENCES payments (id);
-
 ALTER TABLE order_items
     ADD CONSTRAINT FK_ORDER_ITEMS_ON_ORDER FOREIGN KEY (order_id) REFERENCES orders (id);
 
 ALTER TABLE order_items
     ADD CONSTRAINT FK_ORDER_ITEMS_ON_PRODUCT FOREIGN KEY (product_id) REFERENCES products (id);
+
+ALTER TABLE payments
+    ADD CONSTRAINT FK_PAYMENTS_ON_ORDER FOREIGN KEY (order_id) REFERENCES orders (id);
 
 ALTER TABLE products
     ADD CONSTRAINT FK_PRODUCTS_ON_CATEGORY FOREIGN KEY (category_id) REFERENCES categories (id);

@@ -20,17 +20,9 @@ public interface OrderQueryRepository extends PanacheRepository.Reactive.Statele
             " left join fetch o.orderItems" +
             " left join fetch o.cart c1" +
             " left join fetch c1.customer c2" +
+            " left join fetch o.payments p" +
             " where c2.id = :customerId")
     Uni<List<Order>> findOrderByCustomerId(UUID customerId);
-
-    /**
-     * Find an order by payment id. Order:Payment is 1:1
-     *
-     * @param paymentId : payment id
-     * @return Order
-     */
-    @HQL("from Order o where o.payment.id = :paymentId")
-    Uni<Order> findOrderByPaymentId(UUID paymentId);
 
     /**
      * Checks if an order exists
@@ -55,6 +47,7 @@ public interface OrderQueryRepository extends PanacheRepository.Reactive.Statele
                 " left join fetch o.orderItems" +
                 " left join fetch o.cart c" +
                 " left join fetch c.customer" +
+                " left join fetch o.payments" +
                 " where o.id = ?1", orderId).firstResult();
     }
 
@@ -68,6 +61,7 @@ public interface OrderQueryRepository extends PanacheRepository.Reactive.Statele
         return find("from Order o " +
                 " left join fetch o.orderItems" +
                 " left join fetch o.cart c" +
+                " left join fetch o.payments p" +
                 " left join fetch c.customer").list();
     }
 }

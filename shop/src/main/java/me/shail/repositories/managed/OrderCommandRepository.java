@@ -3,6 +3,7 @@ package me.shail.repositories.managed;
 import io.quarkus.hibernate.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
 import me.shail.models.Order;
+import me.shail.models.enums.OrderStatus;
 import org.hibernate.annotations.processing.HQL;
 
 import java.util.List;
@@ -31,6 +32,7 @@ public interface OrderCommandRepository extends PanacheRepository.Reactive<Order
                 " left join fetch o.orderItems" +
                 " left join fetch o.cart c" +
                 " left join fetch c.customer" +
+                " left join fetch o.payments" +
                 " where o.id = ?1", orderId).firstResult();
     }
 
@@ -40,17 +42,11 @@ public interface OrderCommandRepository extends PanacheRepository.Reactive<Order
      * @param paymentId : payment id
      * @return Order
      */
-    @HQL("from Order o where o.payment.id = :paymentId")
+    @HQL("from Order o left join fetch o.payments p where p.id = :paymentId")
     Uni<Order> findOrderByPaymentId(UUID paymentId);
 
-    /**
-     * Checks if an order exists
-     *
-     * @param orderId : Order Id
-     * @return true/false
-     */
-    default Uni<Boolean> existsById(UUID orderId) {
-        return count("id = ?1", orderId)
-                .map(count -> count > 0);
+    default Uni<Boolean> cancelOrder(UUID orderId) {
+        return update("set status =?1 where id =?2", OrderStatus.CANCELLED, orderId)
+                .onItem().transform(rowsUpdated -> rowsUpdated == 1);
     }
 }

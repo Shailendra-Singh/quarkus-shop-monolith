@@ -28,11 +28,7 @@ public class OrderRepository {
     }
 
     public Uni<Boolean> delete(UUID orderId) {
-        return this.orderCommandRepository.deleteById(orderId);
-    }
-
-    public Uni<List<Order>> listAll() {
-        return orderQueryRepository.listAll();
+        return this.orderCommandRepository.cancelOrder(orderId);
     }
 
     public Uni<Order> findById(UUID orderId) {
@@ -53,10 +49,6 @@ public class OrderRepository {
 
     public Uni<List<Order>> findOrderByCustomerId(UUID customerId) {
         return this.orderQueryRepository.findOrderByCustomerId(customerId);
-    }
-
-    public Uni<Order> findOrderByPaymentId(UUID paymentId) {
-        return this.orderQueryRepository.findOrderByPaymentId(paymentId);
     }
 
     public Uni<Boolean> existsById(UUID orderId) {

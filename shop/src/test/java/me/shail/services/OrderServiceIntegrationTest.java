@@ -288,12 +288,12 @@ public class OrderServiceIntegrationTest {
     // --| 3. Delete Order - Tests |--------------------------------------------------------------------------------
     @Test
     @RunOnVertxContext
-    public void testDelete_WhenOrderDoesNotExist(UniAsserter asserter) {
+    public void testCancel_WhenOrderDoesNotExist(UniAsserter asserter) {
         // 1.a Non-Existent Order
         UUID nonExistentOrderId = UUID.randomUUID();
 
         // 2. Act and Assert
-        asserter.assertFailedWith(() -> orderService.delete(nonExistentOrderId)
+        asserter.assertFailedWith(() -> orderService.cancel(nonExistentOrderId)
                 , throwable -> {
                     assertNotNull(throwable);
                     assertEquals(EntityNotFoundException.class, throwable.getClass());
@@ -303,7 +303,7 @@ public class OrderServiceIntegrationTest {
 
     @Test
     @RunOnVertxContext
-    public void testDelete(UniAsserter asserter) {
+    public void testCancel(UniAsserter asserter) {
         // 1.a Create Customer
         var inputDto = TestDataFactory.generateMockCustomerDto();
         AtomicReference<CustomerDto> createdCustomer = new AtomicReference<>();
@@ -331,13 +331,19 @@ public class OrderServiceIntegrationTest {
         );
 
         // 2. Act and Assert
-        asserter.execute(() -> orderService.delete(createdOrder.get().id())
+        asserter.execute(() -> orderService.cancel(createdOrder.get().id())
                                 .invoke(result -> {
                                     assertNotNull(result);
                                     assertTrue(result);
                                 })
         );
 
-        // TODO: check for deleted payments once payment service is created
+        // Check if order status is canceled
+        asserter.execute(() -> orderService.findById(createdOrder.get().id())
+                .invoke(result -> {
+                    assertNotNull(result);
+                    assertEquals(OrderStatus.CANCELLED.name(), result.status());
+                })
+        );
     }
 }

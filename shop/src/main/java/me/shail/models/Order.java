@@ -7,12 +7,11 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import me.shail.models.base.AbstractEntity;
 import me.shail.models.enums.OrderStatus;
+import me.shail.models.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @NoArgsConstructor
@@ -33,9 +32,12 @@ public class Order extends AbstractEntity {
     @Column(name = "shipped")
     public ZonedDateTime shipped;
 
-    @OneToOne(cascade = CascadeType.REMOVE)
-    @JoinColumn(unique = true)
-    public Payment payment;
+    @OneToMany(
+            mappedBy = "order",
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE},
+            fetch = FetchType.LAZY
+    )
+    public List<Payment> payments = new ArrayList<>();
 
     @Embedded
     public Address shipmentAddress;
@@ -46,21 +48,35 @@ public class Order extends AbstractEntity {
     @OneToOne
     public Cart cart;
 
+    // Inside Order.java
+    public boolean canAcceptNewPayment() {
+        if (this.payments == null) return true;
+
+        return this.payments.stream()
+                .filter(Objects::nonNull)
+                .noneMatch(p -> p.status == PaymentStatus.ACCEPTED || p.status == PaymentStatus.PENDING);
+    }
+
+    public Payment getConflictivePayment() {
+        return this.payments.stream()
+                .filter(p -> p != null && (p.status == PaymentStatus.ACCEPTED || p.status == PaymentStatus.PENDING))
+                .findFirst()
+                .orElse(null);
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj == null || getClass() != obj.getClass()) return false;
         Order order = (Order) obj;
-        return Objects.equals(price, order.price)
-                && status == order.status
-                && Objects.equals(shipped, order.shipped)
-                && Objects.equals(payment, order.payment)
-                && Objects.equals(shipmentAddress, order.shipmentAddress)
-                && Objects.equals(orderItems, order.orderItems)
-                && Objects.equals(cart, order.cart);
+        if (this.id == null || order.id == null) {
+            return false;
+        }
+
+        return Objects.equals(this.id, order.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(price, status, shipped, payment, shipmentAddress, cart);
+        return getClass().hashCode();
     }
 }
