@@ -32,6 +32,9 @@ public class OrderServiceIntegrationTest {
     @Inject
     CustomerService customerService;
 
+    @Inject
+    PaymentService paymentService;
+
     // --| 1. Create Order - Tests |------------------------------------------------------------------------------------
 
     @Test
@@ -283,6 +286,61 @@ public class OrderServiceIntegrationTest {
                                     assertEquals(3, result.size());
                                 })
         );
+    }
+
+    @Test
+    @RunOnVertxContext
+    public void testFindOrderByPaymentId_WhenPaymentDoesNotExist(UniAsserter asserter) {
+        asserter.assertFailedWith(() -> orderService.findOrderByPaymentId(UUID.randomUUID()), throwable -> {
+            assertNotNull(throwable);
+            assertEquals(EntityNotFoundException.class, throwable.getClass());
+            assertTrue(throwable.getMessage().toLowerCase().contains("payment does not exist"));
+        });
+    }
+
+    @Test
+    @RunOnVertxContext
+    public void testFindOrderByPaymentId(UniAsserter asserter) {
+        // 1.a Create Customer
+        var inputDto = TestDataFactory.generateMockCustomerDto();
+        AtomicReference<CustomerDto> createdCustomer = new AtomicReference<>();
+
+        asserter.execute(() -> customerService.create(inputDto)
+                .onItem()
+                .invoke(createdCustomer::set)
+        );
+
+        // 1.b Create Cart associated with the customer
+        AtomicReference<OrderDto> orderDto = new AtomicReference<>();
+
+        // Crate Cart
+        asserter.execute(() -> cartService.create(createdCustomer.get().id())
+                .invoke(result -> {
+                    // 1.c Prepare the Input DTO
+                    OrderDto mockOrderDto = TestDataFactory.generateMockOrderDto(result);
+                    orderDto.set(mockOrderDto);
+                })
+        );
+
+        // Created Order
+        AtomicReference<UUID> createdOrderId = new AtomicReference<>();
+
+        asserter.execute(() -> orderService.create(orderDto.get()).onItem()
+                .invoke(createdOrder -> createdOrderId.set(createdOrder.id()))
+        );
+
+        // Create Payment
+        AtomicReference<UUID> createdPaymentId = new AtomicReference<>();
+        asserter.execute(() -> paymentService.create(createdOrderId.get())
+                .invoke(paymentDto -> createdPaymentId.set(paymentDto.id()))
+        );
+
+        // Assert impossible max amount: test order has minimum of 10
+        asserter.execute(() -> orderService.findOrderByPaymentId(createdPaymentId.get()).invoke(order -> {
+            assertNotNull(order);
+            assertNotNull(order.paymentId());
+            assertEquals(createdPaymentId.get(), order.paymentId());
+        }));
     }
 
     // --| 3. Delete Order - Tests |--------------------------------------------------------------------------------

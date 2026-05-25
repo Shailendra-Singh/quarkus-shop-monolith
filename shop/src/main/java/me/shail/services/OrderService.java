@@ -16,6 +16,7 @@ import me.shail.models.enums.OrderStatus;
 import me.shail.models.enums.PaymentStatus;
 import me.shail.repositories.CustomerRepository;
 import me.shail.repositories.OrderRepository;
+import me.shail.repositories.PaymentRepository;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,6 +32,9 @@ public class OrderService {
 
     @Inject
     CustomerRepository customerRepository;
+
+    @Inject
+    PaymentRepository paymentRepository;
 
     @Inject
     CartService cartService;
@@ -88,6 +92,13 @@ public class OrderService {
                                 )
                 );
 
+    }
+
+    @WithCustomStatelessSession
+    public Uni<OrderDto> findOrderByPaymentId(UUID paymentId) {
+        return PaymentService.generateUni_FindById(this.paymentRepository, paymentId, false)
+                .chain(payment -> this.orderRepository.findOrderByIdWithOrderItemsStateless(payment.order.id))
+                .onItem().transform(OrderService::mapToDto);
     }
 
     public static Uni<Order> generateUni_FindById(OrderRepository repository, UUID orderId, boolean managed) {

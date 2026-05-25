@@ -6,7 +6,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
-import me.shail.dtos.OrderDto;
 import me.shail.dtos.PaymentDto;
 import me.shail.interceptors.WithCustomStatelessSession;
 import me.shail.models.Payment;
@@ -28,8 +27,6 @@ public class PaymentService {
 
     @Inject
     OrderRepository orderRepository;
-    @Inject
-    OrderService orderService;
 
     public static PaymentDto mapToDto(Payment payment) {
         if (payment != null) {
@@ -90,12 +87,6 @@ public class PaymentService {
                     return this.paymentRepository.create(payment);
                 })
                 .onItem().transform(PaymentService::mapToDto);
-    }
-
-    @WithCustomStatelessSession
-    public Uni<OrderDto> findOrderByPaymentId(UUID paymentId) {
-        return generateUni_FindById(this.paymentRepository, paymentId, false)
-                .chain(payment -> orderService.findById(payment.order.id));
     }
 
     @WithTransaction
