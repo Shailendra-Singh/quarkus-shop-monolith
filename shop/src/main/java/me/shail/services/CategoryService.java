@@ -10,7 +10,6 @@ import me.shail.dtos.CategoryDto;
 import me.shail.interceptors.WithCustomStatelessSession;
 import me.shail.models.Category;
 import me.shail.repositories.CategoryRepository;
-import org.hibernate.reactive.mutiny.Mutiny;
 
 import java.util.List;
 import java.util.UUID;
@@ -66,10 +65,10 @@ public class CategoryService {
         }
 
         return generateUni_FindById(this.categoryRepository, parent_category_id, true)
-                .chain(parentCategory -> Mutiny.fetch(parentCategory.subCategories)
-                        .chain(() -> {
-                            parentCategory.addChild(category);
-                            return this.categoryRepository.create(category);
-                        })).onItem().transform(CategoryService::mapToDto);
+                .chain(parentCategory -> {
+                    category.parent = parentCategory;
+                    return this.categoryRepository.create(category);
+                })
+                .onItem().transform(CategoryService::mapToDto);
     }
 }
