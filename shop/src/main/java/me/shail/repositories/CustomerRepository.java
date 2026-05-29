@@ -1,6 +1,7 @@
 package me.shail.repositories;
 
 import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
 import me.shail.models.Customer;
@@ -10,7 +11,7 @@ import me.shail.repositories.stateless.CustomerQueryRepository;
 import java.util.List;
 import java.util.UUID;
 
-@Dependent
+@ApplicationScoped
 public class CustomerRepository {
     @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject

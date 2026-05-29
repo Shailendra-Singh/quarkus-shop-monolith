@@ -1,9 +1,11 @@
 package me.shail.helpers.data;
 
 import me.shail.dtos.CartDto;
+import me.shail.dtos.CategoryDto;
 import me.shail.dtos.CustomerDto;
 import me.shail.dtos.OrderDto;
 import me.shail.helpers.data.factory.CartDataFactory;
+import me.shail.helpers.data.factory.CategoryDataFactory;
 import me.shail.helpers.data.factory.CustomerDataFactory;
 import me.shail.helpers.data.factory.OrderDataFactory;
 
@@ -24,5 +26,9 @@ public final class TestDataFactory {
 
     public static OrderDto generateMockOrderDto(CartDto cartDto) {
         return OrderDataFactory.generateOrder(cartDto);
+    }
+
+    public static CategoryDto generateMockCategoryDto() {
+        return CategoryDataFactory.generateCategory();
     }
 }

@@ -1,27 +1,38 @@
 package me.shail.repositories;
 
-import io.quarkus.hibernate.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
-import me.shail.dtos.CategoryDto;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import me.shail.models.Category;
+import me.shail.repositories.managed.CategoryCommandRepository;
+import me.shail.repositories.stateless.CategoryQueryRepository;
 
 import java.util.List;
 import java.util.UUID;
 
-public interface CategoryRepository extends PanacheRepository.Reactive.Stateless<Category, UUID> {
-    default Uni<List<CategoryDto>> findAllCategoryDtos() {
-        return find("SELECT c.id, c.name, c.description, "
-                + "(SELECT count(p) FROM Product p WHERE p.category = c) as productsCount"
-                + "FROM Category c")
-                .project(CategoryDto.class)
-                .list();
+@ApplicationScoped
+public class CategoryRepository {
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    CategoryCommandRepository categoryCommandRepository;
+
+    @SuppressWarnings("CdiInjectionPointsInspection")
+    @Inject
+    CategoryQueryRepository categoryQueryRepository;
+
+    public Uni<Category> create(Category category) {
+        return this.categoryCommandRepository.persist(category).replaceWith(category);
     }
 
-    default Uni<CategoryDto> findCategoryDtoById(UUID categoryId) {
-        return find("SELECT c.id, c.name, c.description, "
-                + "(SELECT count(p) FROM Product p WHERE p.category = c) as productsCount"
-                + "FROM Category c"
-                + "WHERE c.id = :categoryId", categoryId)
-                .project(CategoryDto.class).firstResult();
+    public Uni<List<Category>> findAll() {
+        return this.categoryQueryRepository.listAll();
+    }
+
+    public Uni<Category> findByIdStateless(UUID categoryId) {
+        return this.categoryQueryRepository.findById(categoryId);
+    }
+
+    public Uni<Category> findByIdManaged(UUID categoryId) {
+        return this.categoryCommandRepository.findById(categoryId);
     }
 }

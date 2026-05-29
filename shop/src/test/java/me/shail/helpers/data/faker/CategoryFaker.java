@@ -6,17 +6,18 @@ import me.shail.helpers.data.faker.base.EntityDtoFaker;
 import net.datafaker.Faker;
 
 import java.util.List;
+import java.util.UUID;
 
 public final class CategoryFaker implements EntityDtoFaker<CategoryDto> {
     private final static Faker faker = Constants.FAKER;
 
     private CategoryDto generateCategory() {
-        String category = faker.commerce().department();
+        String category = faker.commerce().department() + UUID.randomUUID();
         return new CategoryDto(
                 null,
                 category,
-                category + " description",
-                0L
+                category + " description " + UUID.randomUUID(),
+                null
         );
     }
 
