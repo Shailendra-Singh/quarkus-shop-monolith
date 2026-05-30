@@ -6,6 +6,7 @@ import io.quarkus.test.vertx.UniAsserter;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
 import me.shail.helpers.data.TestDataFactory;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -20,6 +21,9 @@ public class CategoryServiceIntegrationTest {
 
     @Inject
     CategoryService categoryService;
+
+    @Inject
+    ProductService productService;
 
     // --| 1. Create - Tests |------------------------------------------------------------------------------------------
 
@@ -76,7 +80,73 @@ public class CategoryServiceIntegrationTest {
         );
     }
 
-    // --| 1. Find - Tests |--------------------------------------------------------------------------------------------
+    // --| 2. Delete - Tests |------------------------------------------------------------------------------------------
+
+    @Test
+    @RunOnVertxContext
+    public void testRemoveAllProductsFromCategory_WhenCategoryDoesNotExist(UniAsserter asserter) {
+        UUID fakeCategoryId = UUID.randomUUID();
+        asserter.assertFailedWith(() ->
+                        categoryService.removeAllProductsFromCategory(fakeCategoryId)
+                , throwable -> {
+                    assertEquals(EntityNotFoundException.class, throwable.getClass());
+                    assertTrue(throwable.getMessage().toLowerCase().contains("category does not exist"));
+                }
+        );
+    }
+
+    @Test
+    @RunOnVertxContext
+    public void testRemoveAllProductsFromCategory(UniAsserter asserter) {
+        var inputCategoryDto = TestDataFactory.generateMockCategoryDto();
+        AtomicReference<UUID> createdCategoryId = new AtomicReference<>();
+        asserter.execute(() -> categoryService.create(inputCategoryDto, null)
+                .invoke(createdCategory -> createdCategoryId.set(createdCategory.id())
+                )
+        );
+
+        asserter.execute(() -> productService.create(TestDataFactory.generateMockProductDto(createdCategoryId.get())));
+        asserter.execute(() -> productService.create(TestDataFactory.generateMockProductDto(createdCategoryId.get())));
+
+        asserter.execute(() -> categoryService
+                .removeAllProductsFromCategory(createdCategoryId.get())
+                .invoke(removedCount -> assertEquals(2, removedCount))
+        );
+
+        asserter.execute(() -> productService
+                .countByCategoryId(createdCategoryId.get())
+                .invoke(count -> assertEquals(0, count))
+        );
+    }
+
+    // --| 3. Find - Tests |--------------------------------------------------------------------------------------------
+
+    @Test
+    @RunOnVertxContext
+    public void testExistById_WhenCategoryDoesNotExist(UniAsserter asserter) {
+        UUID fakeCategoryId = UUID.randomUUID();
+        asserter.execute(() ->
+                categoryService.existById(fakeCategoryId).invoke(Assertions::assertFalse)
+        );
+    }
+
+    @Test
+    @RunOnVertxContext
+    public void testExistById(UniAsserter asserter) {
+        var inputDto = TestDataFactory.generateMockCategoryDto();
+        AtomicReference<UUID> createdCategoryId = new AtomicReference<>();
+
+        asserter.execute(() ->
+                categoryService
+                        .create(inputDto, null)
+                        .onItem()
+                        .invoke(createdCategory -> createdCategoryId.set(createdCategory.id()))
+        );
+
+        asserter.execute(() ->
+                categoryService.existById(createdCategoryId.get()).invoke(Assertions::assertTrue)
+        );
+    }
 
     @Test
     @RunOnVertxContext

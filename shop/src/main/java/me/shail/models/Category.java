@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import me.shail.models.base.AbstractEntity;
 
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -29,17 +29,11 @@ public class Category extends AbstractEntity {
     public Category parent;
 
     @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
-    public Set<Category> subCategories = new LinkedHashSet<>();
+    public Set<Category> subCategories = new HashSet<>();
 
     public Category(@NotNull String name, @NotNull String description) {
         this.name = name;
         this.description = description;
-    }
-
-    // Defensive helper methods to maintain bidirectional sync
-    public void addChild(Category child) {
-        this.subCategories.add(child);
-        child.parent = this;
     }
 
     @Override

@@ -11,7 +11,6 @@ public record ProductDto(
         BigDecimal price,
         String status,
         Integer salesCounter,
-        Set<ReviewDto> reviews,
-        UUID categoryId
+        Set<UUID> categories
 ) {
 }

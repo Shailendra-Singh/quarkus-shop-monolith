@@ -12,6 +12,7 @@ import me.shail.models.Category;
 import me.shail.repositories.CategoryRepository;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -36,6 +37,29 @@ public class CategoryService {
                 .ifNull().failWith(() -> new EntityNotFoundException("Category does not exist. ID: " + categoryId));
     }
 
+    public static Uni<Boolean> generateUni_ExistById(CategoryRepository repository, UUID categoryId, boolean managed) {
+        Uni<Boolean> generatedUni;
+        if (managed)
+            generatedUni = repository.existsByIdManaged(categoryId);
+        else
+            generatedUni = repository.existsByIdStateless(categoryId);
+
+        return generatedUni;
+    }
+
+    @SuppressWarnings("unused")
+    public static Uni<Boolean> generateUni_AllExist(CategoryRepository repository,
+                                                    Set<UUID> categoryIds,
+                                                    boolean managed) {
+        Uni<Boolean> generatedUni;
+        if (managed)
+            generatedUni = repository.allExistManaged(categoryIds);
+        else
+            generatedUni = repository.allExistStateless((categoryIds));
+
+        return generatedUni;
+    }
+
     @WithCustomStatelessSession
     public Uni<List<CategoryDto>> findAll() {
         log.debug("Request to get all Categories");
@@ -53,6 +77,25 @@ public class CategoryService {
     public Uni<CategoryDto> findById(UUID categoryId) {
         log.debug("Request to get Category: {}", categoryId);
         return generateUni_FindById(this.categoryRepository, categoryId, false).map(CategoryService::mapToDto);
+    }
+
+    @WithCustomStatelessSession
+    public Uni<Boolean> existById(UUID categoryId) {
+        log.debug("Request to check if Category exists: {}", categoryId);
+        return generateUni_ExistById(this.categoryRepository, categoryId, false);
+    }
+
+    @WithTransaction
+    public Uni<Integer> removeAllProductsFromCategory(UUID categoryId) {
+        return generateUni_ExistById(this.categoryRepository, categoryId, true)
+                .chain(exists -> {
+                    if (!exists)
+                        return Uni.createFrom().failure(() ->
+                                new EntityNotFoundException("Category does not exist. ID: " + categoryId)
+                        );
+
+                    return this.categoryRepository.removeAllProductsFromCategory(categoryId);
+                });
     }
 
     @WithTransaction

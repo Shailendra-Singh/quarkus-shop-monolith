@@ -1,15 +1,11 @@
 package me.shail.helpers.data;
 
-import me.shail.dtos.CartDto;
-import me.shail.dtos.CategoryDto;
-import me.shail.dtos.CustomerDto;
-import me.shail.dtos.OrderDto;
-import me.shail.helpers.data.factory.CartDataFactory;
-import me.shail.helpers.data.factory.CategoryDataFactory;
-import me.shail.helpers.data.factory.CustomerDataFactory;
-import me.shail.helpers.data.factory.OrderDataFactory;
+import me.shail.dtos.*;
+import me.shail.helpers.data.factory.*;
 
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 public final class TestDataFactory {
     public static List<CustomerDto> generateMockCustomerDtos(int count) {
@@ -30,5 +26,17 @@ public final class TestDataFactory {
 
     public static CategoryDto generateMockCategoryDto() {
         return CategoryDataFactory.generateCategory();
+    }
+
+    public static ProductDto generateMockProductDto(Set<UUID> categories) {
+        return ProductDataFactory.generate(categories);
+    }
+
+    public static ProductDto generateMockProductDto(UUID categoryId) {
+        return ProductDataFactory.generate(Set.of(categoryId));
+    }
+
+    public static ProductDto generateMockProductDto() {
+        return ProductDataFactory.generate(null);
     }
 }

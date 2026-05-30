@@ -8,6 +8,7 @@ import me.shail.repositories.managed.CategoryCommandRepository;
 import me.shail.repositories.stateless.CategoryQueryRepository;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -24,6 +25,10 @@ public class CategoryRepository {
         return this.categoryCommandRepository.persist(category).replaceWith(category);
     }
 
+    public Uni<Integer> removeAllProductsFromCategory(UUID categoryId) {
+        return this.categoryCommandRepository.removeAllProductsFromCategory(categoryId);
+    }
+
     public Uni<List<Category>> findAll() {
         return this.categoryQueryRepository.listAll();
     }
@@ -34,5 +39,21 @@ public class CategoryRepository {
 
     public Uni<Category> findByIdManaged(UUID categoryId) {
         return this.categoryCommandRepository.findById(categoryId);
+    }
+
+    public Uni<Boolean> existsByIdManaged(UUID categoryId) {
+        return this.categoryCommandRepository.existById(categoryId);
+    }
+
+    public Uni<Boolean> existsByIdStateless(UUID categoryId) {
+        return this.categoryQueryRepository.existById(categoryId);
+    }
+
+    public Uni<Boolean> allExistManaged(Set<UUID> categoryIds) {
+        return this.categoryCommandRepository.allExist(categoryIds);
+    }
+
+    public Uni<Boolean> allExistStateless(Set<UUID> categoryIds) {
+        return this.categoryQueryRepository.allExist(categoryIds);
     }
 }

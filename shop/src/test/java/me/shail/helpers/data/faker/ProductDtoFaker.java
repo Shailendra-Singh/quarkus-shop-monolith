@@ -2,18 +2,19 @@ package me.shail.helpers.data.faker;
 
 import me.shail.dtos.ProductDto;
 import me.shail.helpers.Constants;
-import me.shail.helpers.data.faker.base.EntityDtoFaker;
 import me.shail.models.enums.ProductStatus;
 import net.datafaker.Faker;
 
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
-public class ProductDtoFaker implements EntityDtoFaker<ProductDto> {
+public class ProductDtoFaker {
     private final static Faker faker = Constants.FAKER;
 
-    private ProductDto generateProduct() {
+    private ProductDto generateProduct(Set<UUID> categories) {
         return new ProductDto(
                 null,
                 faker.commerce().productName(),
@@ -21,17 +22,15 @@ public class ProductDtoFaker implements EntityDtoFaker<ProductDto> {
                 BigDecimal.valueOf(faker.number().randomDouble(2, 5, 2000)),
                 faker.options().nextElement(ProductStatus.values()).toString(),
                 faker.number().numberBetween(0, 10000),
-                Collections.emptySet(),
-                null
+                categories != null ? categories : Collections.emptySet()
         );
     }
 
-    @Override
-    public ProductDto generate() {
-        return generateProduct();
+    public ProductDto generate(Set<UUID> categories) {
+        return generateProduct(categories);
     }
 
-    public List<ProductDto> generate(int count) {
-        return faker.collection(this::generateProduct).len(count).generate();
+    public List<ProductDto> generate(int count, Set<UUID> categories) {
+        return faker.collection(() -> generate(categories)).len(count).generate();
     }
 }

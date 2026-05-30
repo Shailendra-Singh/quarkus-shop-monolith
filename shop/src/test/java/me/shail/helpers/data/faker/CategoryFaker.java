@@ -2,13 +2,12 @@ package me.shail.helpers.data.faker;
 
 import me.shail.dtos.CategoryDto;
 import me.shail.helpers.Constants;
-import me.shail.helpers.data.faker.base.EntityDtoFaker;
 import net.datafaker.Faker;
 
 import java.util.List;
 import java.util.UUID;
 
-public final class CategoryFaker implements EntityDtoFaker<CategoryDto> {
+public final class CategoryFaker {
     private final static Faker faker = Constants.FAKER;
 
     private CategoryDto generateCategory() {
@@ -21,7 +20,6 @@ public final class CategoryFaker implements EntityDtoFaker<CategoryDto> {
         );
     }
 
-    @Override
     public CategoryDto generate() {
         return generateCategory();
     }

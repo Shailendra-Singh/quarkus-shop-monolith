@@ -36,7 +36,6 @@ public class PaymentServiceIntegrationTest {
     public void testCreate_WhenOrderDoesNotExist(UniAsserter asserter) {
         UUID fakeOrderId = UUID.randomUUID();
 
-
         asserter.assertFailedWith(() -> paymentService.create(fakeOrderId)
                 , throwable -> {
                     assertNotNull(throwable);

@@ -6,17 +6,24 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import me.shail.models.base.AbstractEntity;
 import me.shail.models.enums.ProductStatus;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
 @Entity
 @NoArgsConstructor
-@ToString(callSuper = true)
 @Table(name = "products")
+// Exclude collections to prevent infinite loops and unintentional lazy loading triggers
+@ToString(callSuper = true, exclude = {"reviews", "categories"})
 public class Product extends AbstractEntity {
+
+    public static final String TABLE_PRODUCT_CATEGORIES = "product_categories";
+
     @NotNull
     @Column(name = "name", nullable = false)
     public String name;
@@ -35,47 +42,53 @@ public class Product extends AbstractEntity {
     public ProductStatus status;
 
     @Column(name = "sales_counter")
-    public Integer salesCounter;
+    public Integer salesCounter = 0;
 
-    // mappedBy refers to the 'product' field in the Review class
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    public Set<Review> reviews = new HashSet<>();
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    public Set<Review> reviews = new LinkedHashSet<>();
 
-    @ManyToOne
-    @JoinColumn(name = "category_id")
-    public Category category;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = Product.TABLE_PRODUCT_CATEGORIES,
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id"),
+            uniqueConstraints = @UniqueConstraint(columnNames = {"product_id", "category_id"})
+    )
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    public Set<Category> categories = new HashSet<>();
 
-    public Product(String name
-            , @NotNull String description
-            , @NotNull BigDecimal price
-            , @NotNull ProductStatus status
-            , @NotNull Integer salesCounter
-            , Set<Review> reviews
-            , Category category) {
+    public Product(String name, String description, BigDecimal price, ProductStatus status, Integer salesCounter) {
         this.name = name;
         this.description = description;
         this.price = price;
         this.status = status;
-        this.salesCounter = salesCounter;
-        this.reviews = reviews;
-        this.category = category;
+        this.salesCounter = salesCounter != null ? salesCounter : 0;
     }
 
     @Override
     public boolean equals(Object obj) {
+        if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
+
         Product product = (Product) obj;
-        return Objects.equals(name, product.name)
-                && Objects.equals(description, product.description)
-                && Objects.equals(price, product.price)
-                && status == product.status
-                && Objects.equals(salesCounter, product.salesCounter)
-                && Objects.equals(reviews, product.reviews)
-                && Objects.equals(category, product.category);
+
+        // Prefer Database Identity if available
+        if (this.id != null && product.id != null) {
+            return Objects.equals(this.id, product.id);
+        }
+
+        // Fall back to unique business fields using safe getters (Excluding mutable collections)
+        return Objects.equals(this.name, product.name)
+                && Objects.equals(this.description, product.description)
+                && Objects.equals(this.price, product.price)
+                && this.status == product.status;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, description, price, category);
+        if (id != null) {
+            return Objects.hash(id);
+        }
+        return Objects.hash(name, description, status);
     }
 }
