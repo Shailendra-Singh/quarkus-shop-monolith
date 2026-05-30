@@ -36,21 +36,18 @@ public class ReviewService {
     }
 
     @WithCustomStatelessSession
-    public Uni<Long> countReviewsByProductId(UUID productid) {
-        log.debug("Request to get count of Reviews for Product Id: {}", productid);
-        return this.reviewRepository.countReviewsByProductId(productid);
+    public Uni<Long> countReviewsByProductId(UUID productId) {
+        log.debug("Request to get count of Reviews for Product Id: {}", productId);
+        return this.reviewRepository.countReviewsByProductId(productId);
     }
 
     @WithCustomStatelessSession
-    public Uni<List<ReviewDto>> findReviewsByProductId(UUID productid) {
+    public Uni<List<ReviewDto>> findReviewsByProductId(UUID productId) {
         log.debug("Request to get all Reviews");
-        return this.reviewRepository.findReviewsByProductId(productid)
-                .onItem().transform(
-                        reviews -> reviews
-                                .stream()
-                                .map(ReviewService::mapToDto)
-                                .toList()
-                );
+        return this.reviewRepository.findReviewsByProductId(productId)
+                .map(reviews -> reviews.stream()
+                        .map(ReviewService::mapToDto)
+                        .toList());
     }
 
     @WithCustomStatelessSession

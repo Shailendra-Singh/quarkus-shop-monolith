@@ -72,12 +72,10 @@ public class OrderService {
     @WithCustomStatelessSession
     public Uni<List<OrderDto>> listAll() {
         log.debug("Request to get all Orders");
-        return this.orderRepository.listAllWithSubItems().onItem()
-                .transformToUni(orders -> Uni.createFrom()
-                        .item(orders.stream()
-                                .map(OrderService::mapToDto)
-                                .toList()
-                        ));
+        return this.orderRepository.listAllWithSubItems()
+                .map(orders -> orders.stream()
+                        .map(OrderService::mapToDto)
+                        .toList());
     }
 
     @WithCustomStatelessSession
@@ -85,13 +83,10 @@ public class OrderService {
         return CustomerService.generateUni_FindCustomerById(customerRepository, customerId, false)
                 .chain(_ ->
                         this.orderRepository.findOrderByCustomerId(customerId)
-                                .onItem().transformToUni(orders -> Uni.createFrom()
-                                        .item(orders.stream()
-                                                .map(OrderService::mapToDto)
-                                                .toList()
-                                        )
-                                )
-                );
+                                .map(orders -> orders.stream()
+                                        .map(OrderService::mapToDto)
+                                        .toList()
+                                ));
 
     }
 
@@ -102,17 +97,16 @@ public class OrderService {
                 .onItem().transform(OrderService::mapToDto);
     }
 
-    public static Uni<Order> generateUni_FindById(OrderRepository repository, UUID orderId, boolean managed) {
-        Uni<Order> generatedUni;
-        if (managed)
-            generatedUni = repository.findOrderByIdWithOrderItemsManaged(orderId);
-        else
-            generatedUni = repository.findOrderByIdWithOrderItemsStateless(orderId);
+    @WithCustomStatelessSession
+    public Uni<OrderDto> findById(UUID orderId) {
+        log.debug("Request to get Order: {}", orderId);
+        return generateUni_FindById(this.orderRepository, orderId, false)
+                .map(OrderService::mapToDto);
+    }
 
-        return generatedUni
-                .onItem().ifNull().failWith(() ->
-                        new EntityNotFoundException("The Order does not exist! Id: " + orderId)
-                );
+    @WithCustomStatelessSession
+    public Uni<Boolean> existById(UUID id) {
+        return this.orderRepository.existsById(id);
     }
 
     @WithTransaction
@@ -133,18 +127,6 @@ public class OrderService {
                     );
                     return this.orderRepository.create(order);
                 }).onItem().transform(OrderService::mapToDto);
-    }
-
-    @WithCustomStatelessSession
-    public Uni<OrderDto> findById(UUID orderId) {
-        log.debug("Request to get Order: {}", orderId);
-        return generateUni_FindById(this.orderRepository, orderId, false)
-                .map(OrderService::mapToDto);
-    }
-
-    @WithCustomStatelessSession
-    public Uni<Boolean> existsById(UUID id) {
-        return this.orderRepository.existsById(id);
     }
 
     @WithTransaction
@@ -169,21 +151,16 @@ public class OrderService {
                         .map(payment -> this.paymentService.generateRefund(payment.id))
                         .toList();
 
-                yield Uni.createFrom().item(refundUnis)
-                        .chain(list -> {
-                            if (list.isEmpty()) {
+                if (refundUnis.isEmpty()) {
+                    order.status = OrderStatus.CANCELLED;
+                    yield Uni.createFrom().item(Boolean.TRUE);
+                } else {
+                    yield Uni.join().all(refundUnis).andCollectFailures()
+                            .map(results -> {
                                 order.status = OrderStatus.CANCELLED;
-                                return Uni.createFrom().item(Boolean.TRUE);
-                            }
-
-                            return Uni.join().all(refundUnis).andCollectFailures()
-                                    .onItem().transform
-                                            (results -> {
-                                                order.status = OrderStatus.CANCELLED;
-                                                return results.stream().allMatch(Boolean.TRUE::equals);
-                                            });
-                        });
-
+                                return results.stream().allMatch(Boolean.TRUE::equals);
+                            });
+                }
             }
 
             default -> {
@@ -191,5 +168,18 @@ public class OrderService {
                 yield Uni.createFrom().item(Boolean.TRUE);
             }
         };
+    }
+
+    public static Uni<Order> generateUni_FindById(OrderRepository repository, UUID orderId, boolean managed) {
+        Uni<Order> generatedUni;
+        if (managed)
+            generatedUni = repository.findOrderByIdWithOrderItemsManaged(orderId);
+        else
+            generatedUni = repository.findOrderByIdWithOrderItemsStateless(orderId);
+
+        return generatedUni
+                .onItem().ifNull().failWith(() ->
+                        new EntityNotFoundException("The Order does not exist! Id: " + orderId)
+                );
     }
 }

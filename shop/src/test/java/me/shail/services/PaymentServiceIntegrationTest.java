@@ -195,13 +195,13 @@ public class PaymentServiceIntegrationTest {
         asserter.execute(() -> paymentService.create(createdOrderId.get()));
 
         // Assert impossible max amount: negative amount
-        asserter.execute(() -> paymentService.findByPriceRange(-1d).invoke(paymentDtos -> {
+        asserter.execute(() -> paymentService.findByPriceRange(BigDecimal.valueOf(-1)).invoke(paymentDtos -> {
             assertNotNull(paymentDtos);
             assertTrue(paymentDtos.isEmpty());
         }));
 
         // Assert always possible max amount: test order has maximum of 1000
-        asserter.execute(() -> paymentService.findByPriceRange(1001d).invoke(paymentDtos -> {
+        asserter.execute(() -> paymentService.findByPriceRange(BigDecimal.valueOf(1001)).invoke(paymentDtos -> {
             assertNotNull(paymentDtos);
             assertFalse(paymentDtos.isEmpty());
         }));

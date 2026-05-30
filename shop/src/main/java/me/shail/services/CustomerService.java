@@ -53,13 +53,9 @@ public class CustomerService {
     public Uni<List<CustomerDto>> findAll() {
         log.debug("Request to get all Customers");
         return this.customerRepository.listAll()
-                .onItem()
-                .transformToUni(customers -> Uni.createFrom()
-                        .item(customers.stream()
-                                .map(CustomerService::mapToDto)
-                                .toList()
-                        )
-                );
+                .map(customers -> customers.stream()
+                        .map(CustomerService::mapToDto)
+                        .toList());
     }
 
     @WithCustomStatelessSession
@@ -78,15 +74,9 @@ public class CustomerService {
         String status = enabled ? "active" : "inactive";
         log.debug("Request to get all {} customers", status);
         return this.customerRepository.findAllByState(enabled)
-                .onItem()
-                .transformToUni(customers ->
-                        Uni.createFrom()
-                                .item(customers
-                                        .stream()
-                                        .map(CustomerService::mapToDto)
-                                        .toList()
-                                )
-                );
+                .map(customers -> customers.stream()
+                        .map(CustomerService::mapToDto)
+                        .toList());
     }
 
     @WithTransaction

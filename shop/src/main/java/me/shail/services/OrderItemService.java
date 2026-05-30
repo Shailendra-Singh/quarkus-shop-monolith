@@ -127,9 +127,8 @@ public class OrderItemService {
         log.debug("Request to get all OrderItems of OrderId {}", orderId);
         return this.orderItemRepository
                 .findAllByOrderId(orderId)
-                .onItem()
-                .transformToUni(orderItems -> Uni.createFrom()
-                        .item(orderItems.stream().map(OrderItemService::mapToDto).toList())
-                );
+                .map(items -> items.stream()
+                        .map(OrderItemService::mapToDto)
+                        .toList());
     }
 }

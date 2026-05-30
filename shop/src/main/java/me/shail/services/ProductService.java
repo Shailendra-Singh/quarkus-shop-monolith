@@ -52,27 +52,6 @@ public class ProductService {
         );
     }
 
-    public static Uni<Product> generateUni_FindById(ProductRepository repository, UUID productId, boolean managed) {
-        Uni<Product> generatedUni;
-        if (managed)
-            generatedUni = repository.findByIdManaged(productId);
-        else
-            generatedUni = repository.findByIdStateless(productId);
-
-        return generatedUni.onItem().ifNull()
-                .failWith(() -> new EntityNotFoundException("Product does not exist. ID: " + productId));
-    }
-
-    public static Uni<Boolean> generateUni_ExistById(ProductRepository repository, UUID productId, boolean managed) {
-        Uni<Boolean> generatedUni;
-        if (managed)
-            generatedUni = repository.existsByIdManaged(productId);
-        else
-            generatedUni = repository.existsByIdStateless(productId);
-
-        return generatedUni;
-    }
-
     @WithCustomStatelessSession
     public Uni<List<ProductDto>> findAll() {
         log.debug("Request to get all products");
@@ -166,5 +145,21 @@ public class ProductService {
                         .stream()
                         .map(ProductService::mapToDto).toList()
                 );
+    }
+
+
+    public static Uni<Product> generateUni_FindById(ProductRepository repository, UUID productId, boolean managed) {
+        Uni<Product> generatedUni;
+        if (managed)
+            generatedUni = repository.findByIdManaged(productId);
+        else
+            generatedUni = repository.findByIdStateless(productId);
+
+        return generatedUni.onItem().ifNull()
+                .failWith(() -> new EntityNotFoundException("Product does not exist. ID: " + productId));
+    }
+
+    public static Uni<Boolean> generateUni_ExistById(ProductRepository repository, UUID productId, boolean managed) {
+        return managed ? repository.existsByIdManaged(productId) : repository.existsByIdStateless(productId);
     }
 }

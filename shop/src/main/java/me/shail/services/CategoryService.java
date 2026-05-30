@@ -63,13 +63,10 @@ public class CategoryService {
     @WithCustomStatelessSession
     public Uni<List<CategoryDto>> findAll() {
         log.debug("Request to get all Categories");
-        return this.categoryRepository.findAll().onItem()
-                .transformToUni(items -> Uni.createFrom()
-                        .item(items
-                                .stream()
-                                .map(CategoryService::mapToDto)
-                                .toList()
-                        )
+        return this.categoryRepository.findAll()
+                .map(items -> items.stream()
+                        .map(CategoryService::mapToDto)
+                        .toList()
                 );
     }
 

@@ -98,13 +98,13 @@ public class OrderServiceIntegrationTest {
 
     @Test
     @RunOnVertxContext
-    public void testExistsById_WhenOrderDoesNotExist(UniAsserter asserter) {
-        asserter.execute(() -> orderService.existsById(UUID.randomUUID()).invoke(Assertions::assertFalse));
+    public void testExistById_WhenOrderDoesNotExist(UniAsserter asserter) {
+        asserter.execute(() -> orderService.existById(UUID.randomUUID()).invoke(Assertions::assertFalse));
     }
 
     @Test
     @RunOnVertxContext
-    public void testExistsById_WhenOrderExist(UniAsserter asserter) {
+    public void testExistById_WhenOrderExist(UniAsserter asserter) {
         // 1.a Create Customer
         var inputDto = TestDataFactory.generateMockCustomerDto();
         AtomicReference<CustomerDto> createdCustomer = new AtomicReference<>();
@@ -131,7 +131,7 @@ public class OrderServiceIntegrationTest {
         );
 
         // 2. Act and Assert
-        asserter.execute(() -> orderService.existsById(createdOrder.get().id())
+        asserter.execute(() -> orderService.existById(createdOrder.get().id())
                                 .invoke(Assertions::assertTrue)
         );
     }

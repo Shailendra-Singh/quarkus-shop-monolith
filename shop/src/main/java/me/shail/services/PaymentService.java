@@ -35,22 +35,9 @@ public class PaymentService {
         return null;
     }
 
-    public static Uni<Payment> generateUni_FindById(PaymentRepository repository,
-                                                    UUID paymentId,
-                                                    boolean managed) {
-        Uni<Payment> generatedUni;
-        if (managed)
-            generatedUni = repository.findByIdManaged(paymentId);
-        else
-            generatedUni = repository.findByIdStateless(paymentId);
-        return generatedUni
-                .onItem()
-                .ifNull().failWith(() -> new EntityNotFoundException("Payment does not exist. ID: " + paymentId));
-    }
-
     @WithCustomStatelessSession
-    public Uni<List<PaymentDto>> findByPriceRange(Double max) {
-        return this.paymentRepository.findPaymentDtoByMaxPrice(BigDecimal.valueOf(max))
+    public Uni<List<PaymentDto>> findByPriceRange(BigDecimal max) {
+        return this.paymentRepository.findPaymentDtoByMaxPrice(max)
                 .onItem().transformToUni(payments -> {
                     List<PaymentDto> paymentDtoList = payments.stream().map(PaymentService::mapToDto).toList();
                     return Uni.createFrom().item(paymentDtoList);
@@ -93,7 +80,21 @@ public class PaymentService {
     public Uni<Boolean> generateRefund(UUID paymentId) {
         log.debug("Request to generate refund for payment: {}", paymentId);
         // Future: call another service (say TransactionService) to manage refunds
-        return generateUni_FindById(this.paymentRepository, paymentId, false)
+        return generateUni_FindById(this.paymentRepository, paymentId, true)
                 .chain(_ -> Uni.createFrom().item(Boolean.TRUE));
+    }
+
+
+    public static Uni<Payment> generateUni_FindById(PaymentRepository repository,
+                                                    UUID paymentId,
+                                                    boolean managed) {
+        Uni<Payment> generatedUni;
+        if (managed)
+            generatedUni = repository.findByIdManaged(paymentId);
+        else
+            generatedUni = repository.findByIdStateless(paymentId);
+        return generatedUni
+                .onItem()
+                .ifNull().failWith(() -> new EntityNotFoundException("Payment does not exist. ID: " + paymentId));
     }
 }
