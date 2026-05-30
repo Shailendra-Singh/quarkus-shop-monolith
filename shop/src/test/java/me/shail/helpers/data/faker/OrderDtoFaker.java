@@ -13,10 +13,10 @@ public final class OrderDtoFaker {
     private final static Faker faker = Constants.FAKER;
     private final static AddressDtoFaker addressFaker = new AddressDtoFaker();
 
-    private OrderDto generateOrder(CartDto cartDto) {
+    private OrderDto generateOrder(CartDto cartDto, BigDecimal orderPrice) {
         return new OrderDto(
                 null,
-                BigDecimal.valueOf(faker.number().randomDouble(2, 10, 1000)),
+                orderPrice,
                 null,
                 faker.timeAndDate().past(30,
                         java.util.concurrent.TimeUnit.DAYS).atZone(ZoneOffset.UTC),
@@ -28,6 +28,10 @@ public final class OrderDtoFaker {
     }
 
     public OrderDto generate(CartDto cartDto) {
-        return generateOrder(cartDto);
+        return generateOrder(cartDto, BigDecimal.valueOf(0, 2));
+    }
+
+    public OrderDto generate(CartDto cartDto, BigDecimal orderPrice) {
+        return generateOrder(cartDto, orderPrice);
     }
 }

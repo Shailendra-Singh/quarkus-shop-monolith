@@ -42,13 +42,16 @@ public class Order extends AbstractEntity {
     @Embedded
     public Address shipmentAddress;
 
-    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
-    public Set<OrderItem> orderItems = Collections.emptySet();
+    @OneToMany(mappedBy = "order",
+            fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL, // Use ALL since Order owns the lifecycle
+            orphanRemoval = true)
+    @OrderBy("id ASC") // Ensures items always load in a consistent order
+    public Set<OrderItem> orderItems = new LinkedHashSet<>();
 
     @OneToOne
     public Cart cart;
 
-    // Inside Order.java
     public boolean canAcceptNewPayment() {
         if (this.payments == null) return true;
 

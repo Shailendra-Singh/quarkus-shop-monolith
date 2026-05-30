@@ -3,6 +3,7 @@ package me.shail.helpers.data;
 import me.shail.dtos.*;
 import me.shail.helpers.data.factory.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -22,6 +23,10 @@ public final class TestDataFactory {
 
     public static OrderDto generateMockOrderDto(CartDto cartDto) {
         return OrderDataFactory.generateOrder(cartDto);
+    }
+
+    public static OrderDto generateMockOrderDto(CartDto cartDto, BigDecimal price) {
+        return OrderDataFactory.generateOrder(cartDto, price);
     }
 
     public static CategoryDto generateMockCategoryDto() {
@@ -46,5 +51,9 @@ public final class TestDataFactory {
 
     public static ReviewDto generateMockReviewDto() {
         return ReviewDataFactory.generate();
+    }
+
+    public static OrderItemDto generateMockOrderItemDto(UUID productId, UUID orderId) {
+        return OrderItemDataFactory.generateOrderItem(productId, orderId);
     }
 }

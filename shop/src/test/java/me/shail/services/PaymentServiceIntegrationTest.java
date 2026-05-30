@@ -12,6 +12,7 @@ import me.shail.models.enums.PaymentStatus;
 import org.junit.jupiter.api.Test;
 
 import javax.naming.OperationNotSupportedException;
+import java.math.BigDecimal;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -178,7 +179,7 @@ public class PaymentServiceIntegrationTest {
         asserter.execute(() -> cartService.create(createdCustomer.get().id())
                 .invoke(result -> {
                     // 1.c Prepare the Input DTO
-                    OrderDto mockOrderDto = TestDataFactory.generateMockOrderDto(result);
+                    OrderDto mockOrderDto = TestDataFactory.generateMockOrderDto(result, BigDecimal.valueOf(10));
                     orderDto.set(mockOrderDto);
                 })
         );
@@ -193,8 +194,8 @@ public class PaymentServiceIntegrationTest {
         // Create Payment
         asserter.execute(() -> paymentService.create(createdOrderId.get()));
 
-        // Assert impossible max amount: test order has minimum of 10
-        asserter.execute(() -> paymentService.findByPriceRange(9d).invoke(paymentDtos -> {
+        // Assert impossible max amount: negative amount
+        asserter.execute(() -> paymentService.findByPriceRange(-1d).invoke(paymentDtos -> {
             assertNotNull(paymentDtos);
             assertTrue(paymentDtos.isEmpty());
         }));

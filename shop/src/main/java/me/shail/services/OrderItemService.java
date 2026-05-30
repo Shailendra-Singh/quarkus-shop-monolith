@@ -1,12 +1,13 @@
 package me.shail.services;
 
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import me.shail.dtos.OrderItemDto;
+import me.shail.interceptors.WithCustomStatelessSession;
 import me.shail.models.Order;
 import me.shail.models.OrderItem;
 import me.shail.models.Product;
@@ -18,99 +19,117 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-@Transactional
 @ApplicationScoped
 @Slf4j
 public class OrderItemService {
-    @SuppressWarnings("CdiInjectionPointsInspection")
+
     @Inject
     OrderItemRepository orderItemRepository;
-    @SuppressWarnings("CdiInjectionPointsInspection")
+
     @Inject
     OrderRepository orderRepository;
-    @SuppressWarnings("CdiInjectionPointsInspection")
+
     @Inject
     ProductRepository productRepository;
 
     public static OrderItemDto mapToDto(OrderItem orderItem) {
         return new OrderItemDto(
                 orderItem.id,
+                orderItem.unitPrice,
                 orderItem.quantity,
                 orderItem.product.id,
                 orderItem.order.id
         );
     }
 
-    public Uni<OrderItemDto> findById(UUID id) {
-        log.debug("Request to get OrderItem: {}", id);
-        return this.orderItemRepository.findById(id).onItem().transform(OrderItemService::mapToDto);
+    public static OrderItemDto mapToDto(OrderItem orderItem, UUID productId, UUID orderId) {
+        return new OrderItemDto(
+                orderItem.id,
+                orderItem.unitPrice,
+                orderItem.quantity,
+                productId,
+                orderId
+        );
     }
 
+    public static Uni<OrderItem> generateUni_FindById(OrderItemRepository repository,
+                                                      UUID orderItemId,
+                                                      boolean managed) {
+        Uni<OrderItem> generatedUni;
+        if (managed)
+            generatedUni = repository.findByIdManaged(orderItemId);
+        else
+            generatedUni = repository.findByIdStateless(orderItemId);
+
+        return generatedUni.onItem()
+                .ifNull()
+                .failWith(() -> new EntityNotFoundException("OrderItem does not exist. Id: " + orderItemId));
+    }
+
+    @WithCustomStatelessSession
+    public Uni<OrderItemDto> findById(UUID orderItemId) {
+        log.debug("Request to get OrderItem: {}", orderItemId);
+        return generateUni_FindById(this.orderItemRepository, orderItemId, false)
+                .map(OrderItemService::mapToDto);
+    }
+
+    @WithTransaction
     public Uni<OrderItemDto> create(OrderItemDto orderItemDto) {
         log.debug("Request to create OrderItem: {}", orderItemDto);
-        return Uni.combine().all()
-                // 1. Fetch dependencies in parallel for efficiency
-                .unis(
-                        this.orderRepository.findById(orderItemDto.orderId())
-                                .onItem()
-                                .ifNull()
-                                .failWith(
-                                        new IllegalStateException("The Order does not exist. Id: "
-                                                + orderItemDto.orderId())
-                                ),
-                        this.productRepository.findById(orderItemDto.productId())
-                                .onItem()
-                                .ifNull()
-                                .failWith(
-                                        new IllegalStateException("The Product does not exist. Id: "
-                                                + orderItemDto.productId())
-                                )
-                ).asTuple()
-                .chain(tuple -> {
-                    Order order = tuple.getItem1();
-                    Product product = tuple.getItem2();
+        Uni<Order> uni_findOrderById = OrderService.generateUni_FindById
+                (
+                        this.orderRepository,
+                        orderItemDto.orderId(),
+                        true
+                );
 
-                    // 2. Use tuple's result to create OrderItem
-                    OrderItem orderItem = new OrderItem(orderItemDto.quantity(), product, order);
-                    // 3. Update Order State
+        Uni<Product> uni_findProductById = ProductService.generateUni_FindById
+                (
+                        this.productRepository,
+                        orderItemDto.productId(),
+                        true
+                );
+
+        return uni_findOrderById
+                .chain(order -> uni_findProductById.chain(product -> {
+                    // 1. Get Order and Product
+                    OrderItem orderItem = new OrderItem(product.price, orderItemDto.quantity(), product, order);
+                    // 2. Update Order State
                     order.price = order.price.add(
                             product.price.multiply(BigDecimal.valueOf(orderItemDto.quantity()))
                     );
-                    // 4. Persist
-                    return Uni.combine().all().unis(
-                                    this.orderItemRepository.insert(orderItem),
-                                    this.orderRepository.update(order)
-                            ).asTuple()
-                            .replaceWith(OrderItemService.mapToDto(orderItem));
-
-                });
+                    order.price = order.price.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : order.price;
+                    // 3. Persist
+                    return this.orderItemRepository.create(orderItem);
+                }))
+                .map(result -> OrderItemService.mapToDto(result,
+                        orderItemDto.productId(),
+                        orderItemDto.orderId())
+                );
     }
 
-    public Uni<Boolean> delete(UUID id) {
-        log.debug("Request to delete OrderItem: {}", id);
-        return this.orderItemRepository.findById(id)
-                .onItem().ifNull().failWith(new IllegalStateException("OrderItem not found. Id: " + id))
+    @WithTransaction
+    public Uni<Boolean> deleteById(UUID orderItemId) {
+        log.debug("Request to delete OrderItem: {}", orderItemId);
+        return generateUni_FindById(this.orderItemRepository, orderItemId, true)
                 .chain(orderItem -> {
                     Order order = orderItem.order;
                     // reduce the price due to orderItem's removal
-                    BigDecimal reduction = orderItem.product.price.multiply(BigDecimal.valueOf(orderItem.quantity));
+                    BigDecimal reduction = orderItem.unitPrice.multiply(BigDecimal.valueOf(orderItem.quantity));
                     order.price = order.price.subtract(reduction);
 
-                    return Uni.combine().all().unis(
-                                    this.orderItemRepository.deleteById(id),
-                                    this.orderRepository.update(order)
-                            ).asTuple()
-                            .onItem().transform(Tuple2::getItem1);
+                    return this.orderItemRepository.deleteById(orderItemId);
                 });
     }
 
-    public Uni<List<OrderItemDto>> findByOrderId(UUID id) {
-        log.debug("Request to get all OrderItems of OrderId {}", id);
+    @WithCustomStatelessSession
+    public Uni<List<OrderItemDto>> findAllByOrderId(UUID orderId) {
+        log.debug("Request to get all OrderItems of OrderId {}", orderId);
         return this.orderItemRepository
-                .findAllByOrderId(id)
+                .findAllByOrderId(orderId)
                 .onItem()
-                .transformToUni(orderItems -> {
-                    return Uni.createFrom().item(orderItems.stream().map(OrderItemService::mapToDto).toList());
-                });
+                .transformToUni(orderItems -> Uni.createFrom()
+                        .item(orderItems.stream().map(OrderItemService::mapToDto).toList())
+                );
     }
 }
