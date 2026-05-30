@@ -50,16 +50,6 @@ public class Customer extends AbstractEntity {
         this.enabled = enabled;
     }
 
-    public void addCart(Cart cart) {
-        carts.add(cart);
-        cart.customer = this; // Synchronize the other side
-    }
-
-    public void removeCart(Cart cart) {
-        carts.remove(cart);
-        cart.customer = null; // Clean up the other side
-    }
-
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;

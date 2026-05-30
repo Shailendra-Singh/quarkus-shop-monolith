@@ -1,12 +1,14 @@
 package me.shail.services;
 
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import me.shail.dtos.ReviewDto;
+import me.shail.interceptors.WithCustomStatelessSession;
+import me.shail.models.Product;
 import me.shail.models.Review;
 import me.shail.repositories.ProductRepository;
 import me.shail.repositories.ReviewRepository;
@@ -15,15 +17,12 @@ import java.util.List;
 import java.util.UUID;
 
 @Slf4j
-@Transactional
 @ApplicationScoped
 public class ReviewService {
 
-    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     ReviewRepository reviewRepository;
 
-    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     ProductRepository productRepository;
 
@@ -36,9 +35,16 @@ public class ReviewService {
         );
     }
 
+    @WithCustomStatelessSession
+    public Uni<Long> countReviewsByProductId(UUID productid) {
+        log.debug("Request to get count of Reviews for Product Id: {}", productid);
+        return this.reviewRepository.countReviewsByProductId(productid);
+    }
+
+    @WithCustomStatelessSession
     public Uni<List<ReviewDto>> findReviewsByProductId(UUID productid) {
         log.debug("Request to get all Reviews");
-        return this.reviewRepository.findReviewsByProduct_Id(productid)
+        return this.reviewRepository.findReviewsByProductId(productid)
                 .onItem().transform(
                         reviews -> reviews
                                 .stream()
@@ -47,38 +53,49 @@ public class ReviewService {
                 );
     }
 
-    public Uni<ReviewDto> findById(UUID id) {
-        log.debug("Request to get Review: {}", id);
-        return this.reviewRepository.findById(id).onItem().transform(ReviewService::mapToDto);
-    }
-
-    public Uni<ReviewDto> create(ReviewDto reviewDto, UUID productId) {
-        log.debug("Request to create Review: {}", reviewDto);
-
-        return this.productRepository.findById(productId)
-                .onItem().ifNull().failWith(
-                        () -> new EntityNotFoundException("Product not found. ID: " + productId)
-                ).chain(product -> {
-                    Review savedReview = new Review(reviewDto.title(),
-                            reviewDto.description(),
-                            reviewDto.rating(),
-                            product);
-                    return this.reviewRepository.insert(savedReview)
-                            .replaceWith(ReviewService.mapToDto(savedReview));
-                });
-    }
-
-    public Uni<Boolean> delete(UUID reviewId) {
-        log.debug("Request to delete Review: {}", reviewId);
+    @WithCustomStatelessSession
+    public Uni<ReviewDto> findById(UUID reviewId) {
+        log.debug("Request to get Review: {}", reviewId);
         return this.reviewRepository.findById(reviewId)
-                .onItem().ifNull().failWith(() -> new EntityNotFoundException("Review not found. Id: " + reviewId))
-                .chain(review -> {
-                    return this.productRepository.findProductByReview_Id(reviewId)
-                            .chain(product -> {
-                                product.reviews.remove(review);
+                .onItem().ifNull().failWith(() ->
+                        new EntityNotFoundException("Review does not exist. Id: " + reviewId)
+                )
+                .map(ReviewService::mapToDto);
+    }
 
-                                return this.reviewRepository.delete(review).replaceWith(true);
+    @WithTransaction
+    public Uni<ReviewDto> create(ReviewDto reviewDto, UUID productId) {
+        log.debug("Request to create Review: {} for Product: {}", reviewDto, productId);
+
+        return ProductService
+                .generateUni_ExistById(this.productRepository, productId, true)
+                .chain(exists -> {
+                    if (!exists)
+                        return Uni.createFrom().failure(() ->
+                                new EntityNotFoundException("Product does not exist. ID: " + productId)
+                        );
+
+                    return this.reviewRepository
+                            .getSession().map(session -> session.getReference(Product.class, productId))
+                            .chain(productProxy -> {
+                                Review savedReview = new Review(reviewDto.title(),
+                                        reviewDto.description(),
+                                        reviewDto.rating(),
+                                        productProxy);
+                                return this.reviewRepository.create(savedReview);
                             });
-                });
+                }).map(ReviewService::mapToDto);
+    }
+
+    @WithTransaction
+    public Uni<Boolean> deleteById(UUID reviewId) {
+        log.debug("Request to delete Review: {}", reviewId);
+        return this.reviewRepository.deleteById(reviewId);
+    }
+
+    @WithTransaction
+    public Uni<Integer> deleteAllReviewsByProductId(UUID productId) {
+        log.debug("Request to delete all reviews for Product Id: {}", productId);
+        return this.reviewRepository.deleteReviewsByProductId(productId);
     }
 }
