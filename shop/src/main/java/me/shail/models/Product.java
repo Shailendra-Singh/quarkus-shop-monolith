@@ -48,7 +48,8 @@ public class Product extends AbstractEntity {
             name = Product.TABLE_PRODUCT_CATEGORIES,
             joinColumns = @JoinColumn(name = "product_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id"),
-            uniqueConstraints = @UniqueConstraint(columnNames = {"product_id", "category_id"})
+            uniqueConstraints = @UniqueConstraint(columnNames = {"product_id", "category_id"}),
+            indexes = @Index(name = "idx_product_categories_category_id", columnList = "category_id")
     )
     @OnDelete(action = OnDeleteAction.CASCADE)
     public Set<Category> categories = new HashSet<>();

@@ -14,7 +14,7 @@ public class ReviewDtoFaker {
                 null,
                 faker.lorem().sentence(3),
                 faker.lorem().paragraph(2),
-                faker.number().numberBetween(1L, 6L)
+                faker.number().numberBetween(1, 6)
         );
     }
 

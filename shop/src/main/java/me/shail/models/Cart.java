@@ -7,12 +7,15 @@ import lombok.ToString;
 import me.shail.models.base.AbstractEntity;
 import me.shail.models.enums.CartStatus;
 
-import java.util.Objects;
-
 @Entity
 @NoArgsConstructor
 @ToString(callSuper = true)
-@Table(name = "carts")
+@Table(
+        name = "carts",
+        indexes = {
+                @Index(name = "idx_carts_customer_status", columnList = "customer_id, status")
+        }
+)
 public class Cart extends AbstractEntity {
 
     @ManyToOne(fetch = FetchType.LAZY) // Industry standard: Always use Lazy for ManyToOne
@@ -29,14 +32,15 @@ public class Cart extends AbstractEntity {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof Cart cart)) return false;
-        return Objects.equals(customer.id, cart.customer.id) && Objects.equals(status, cart.status);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Cart cart)) return false;
+        // Relying strictly on the AbstractEntity ID to prevent Lazy load crashes
+        return id != null && id.equals(cart.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(customer.id, status);
+        return getClass().hashCode(); // Standard safe practice for Hibernate entities
     }
 }

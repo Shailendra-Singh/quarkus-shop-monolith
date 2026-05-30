@@ -6,6 +6,6 @@ public record ReviewDto(
         UUID id,
         String title,
         String description,
-        Long rating
+        Integer rating
 ) {
 }

@@ -10,8 +10,14 @@ import java.math.BigDecimal;
 
 @Entity
 @NoArgsConstructor
-@ToString(callSuper = true)
-@Table(name = "order_items")
+@ToString(callSuper = true, exclude = {"product", "order"})
+@Table(
+        name = "order_items",
+        indexes = {
+                @Index(name = "idx_order_items_order_id", columnList = "order_id"),
+                @Index(name = "idx_order_items_product_id", columnList = "product_id")
+        }
+)
 public class OrderItem extends AbstractEntity {
 
     @NotNull

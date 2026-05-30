@@ -101,7 +101,7 @@ CREATE TABLE reviews
     last_modified_date TIMESTAMP WITHOUT TIME ZONE,
     title              VARCHAR(255)                NOT NULL,
     description        VARCHAR(255)                NOT NULL,
-    rating             BIGINT                      NOT NULL,
+    rating             INTEGER                     NOT NULL,
     product_id         UUID                        NOT NULL,
     CONSTRAINT pk_reviews PRIMARY KEY (id)
 );
@@ -115,6 +115,10 @@ ALTER TABLE categories
 ALTER TABLE payments
     ADD CONSTRAINT uc_payments_payment_reference UNIQUE (payment_reference_id);
 
+CREATE INDEX idx_carts_customer_status ON carts (customer_id, status);
+
+CREATE INDEX idx_reviews_product_rating ON reviews (product_id, rating DESC);
+
 ALTER TABLE carts
     ADD CONSTRAINT FK_CARTS_ON_CUSTOMER FOREIGN KEY (customer_id) REFERENCES customers (id);
 
@@ -127,8 +131,12 @@ ALTER TABLE orders
 ALTER TABLE order_items
     ADD CONSTRAINT FK_ORDER_ITEMS_ON_ORDER FOREIGN KEY (order_id) REFERENCES orders (id);
 
+CREATE INDEX idx_order_items_order_id ON order_items (order_id);
+
 ALTER TABLE order_items
     ADD CONSTRAINT FK_ORDER_ITEMS_ON_PRODUCT FOREIGN KEY (product_id) REFERENCES products (id);
+
+CREATE INDEX idx_order_items_product_id ON order_items (product_id);
 
 ALTER TABLE payments
     ADD CONSTRAINT FK_PAYMENTS_ON_ORDER FOREIGN KEY (order_id) REFERENCES orders (id);
@@ -138,6 +146,8 @@ ALTER TABLE reviews
 
 ALTER TABLE product_categories
     ADD CONSTRAINT fk_procat_on_category FOREIGN KEY (category_id) REFERENCES categories (id);
+
+CREATE INDEX idx_product_categories_category_id ON product_categories (category_id);
 
 ALTER TABLE product_categories
     ADD CONSTRAINT fk_procat_on_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE;
