@@ -38,6 +38,7 @@ CREATE TABLE order_items
     created_date       TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     last_modified_date TIMESTAMP WITHOUT TIME ZONE,
     quantity           BIGINT                      NOT NULL,
+    unit_price         DECIMAL(12, 2)              NOT NULL,
     product_id         UUID,
     order_id           UUID,
     CONSTRAINT pk_order_items PRIMARY KEY (id)
