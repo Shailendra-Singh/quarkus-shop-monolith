@@ -13,7 +13,6 @@ import me.shail.repositories.CustomerRepository;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Slf4j
@@ -69,7 +68,7 @@ public class CustomerService {
         return this.customerRepository
                 .findByIdStateless(id)
                 .onItem().ifNull().failWith(() ->
-                        new NoSuchElementException("Customer doesn't exist. ID:  " + id)
+                        new EntityNotFoundException("Customer doesn't exist. ID:  " + id)
                 )
                 .onItem().transform(CustomerService::mapToDto);
     }
@@ -97,7 +96,7 @@ public class CustomerService {
                 .onItem().transformToUni(rowsAffected -> {
                     if (rowsAffected == 0)
                         return Uni.createFrom().failure(
-                                new NoSuchElementException("Customer doesn't exist. ID:  " + id)
+                                new EntityNotFoundException("Customer doesn't exist. ID:  " + id)
                         );
 
                     return Uni.createFrom().item(rowsAffected == 1);

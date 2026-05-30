@@ -218,13 +218,11 @@ public class OrderServiceIntegrationTest {
 
         // 2. Act and Assert
         asserter.execute(() ->
-//                sessionFactory.withStatelessSession(_ ->
                         orderService.listAll()
                                 .invoke(result -> {
                                     assertNotNull(result);
                                     assertFalse(result.isEmpty());
                                 })
-//                )
         );
     }
 

@@ -5,6 +5,7 @@ import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityNotFoundException;
 import me.shail.dtos.CustomerDto;
 import me.shail.helpers.data.TestDataFactory;
 import me.shail.repositories.CustomerRepository;
@@ -13,7 +14,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -124,7 +124,7 @@ public class CustomerServiceIntegrationTest {
                                 .invoke(Assertions::assertNotNull)
                 , throwable -> {
             assertNotNull(throwable);
-            assertEquals(NoSuchElementException.class, throwable.getClass());
+            assertEquals(EntityNotFoundException.class, throwable.getClass());
             assertTrue(throwable.getMessage().toLowerCase().contains("doesn't exist"));
         });
     }
@@ -203,7 +203,7 @@ public class CustomerServiceIntegrationTest {
                         customerService.delete(nonExistentId)
                                 .invoke(Assertions::assertTrue)
                 , throwable -> {
-                    assertEquals(NoSuchElementException.class, throwable.getClass());
+                    assertEquals(EntityNotFoundException.class, throwable.getClass());
                     assertTrue(throwable.getMessage().toLowerCase().contains("doesn't exist"));
                 });
     }

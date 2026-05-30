@@ -47,7 +47,7 @@ public class CartServiceIntegrationTest {
         var nonExistentCustomer = UUID.randomUUID();
 
         asserter.assertFailedWith(
-                () -> cartService.getActiveCart(nonExistentCustomer, false)
+                () -> cartService.getActiveCart(nonExistentCustomer)
                 , throwable -> {
                     assertEquals(EntityNotFoundException.class, throwable.getClass());
                     assertTrue(throwable.getMessage().toLowerCase().contains("customer does not exist"));
@@ -88,7 +88,7 @@ public class CartServiceIntegrationTest {
         );
 
         asserter.assertFailedWith(() ->
-                                cartService.getActiveCart(createdCustomerId.get(), false)
+                                cartService.getActiveCart(createdCustomerId.get())
                                         .invoke(returnedCart -> {
                                             assertNotNull(returnedCart);
                                             assertNotNull(returnedCart.id());

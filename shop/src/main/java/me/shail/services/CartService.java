@@ -73,7 +73,7 @@ public class CartService {
     @WithCustomStatelessSession
     public Uni<CartDto> findById(UUID id) {
         log.debug("Request to get Cart: {}", id);
-        return generateUni_FindCartWithCustomer(id, false)
+        return generateUni_FindCartWithCustomer(this.cartRepository, id, false)
                 .onItem().transform(CartService::mapToDto);
     }
 
@@ -92,23 +92,19 @@ public class CartService {
     }
 
     @WithCustomStatelessSession
-    public Uni<CartDto> getActiveCart(UUID customerId, boolean managed) {
-        return genearateUni_GetActiveCart(customerId, managed).onItem()
-                .transform(CartService::mapToDto);
-    }
-
-    private Uni<Cart> genearateUni_GetActiveCart(UUID customerId, boolean managed) {
-        return CustomerService.generateUni_FindCustomerById(this.customerRepository, customerId, managed)
+    public Uni<CartDto> getActiveCart(UUID customerId) {
+        return CustomerService.generateUni_FindCustomerById(this.customerRepository, customerId, false)
                 .chain(_ ->
-                        generateUni_FindCartByStatusAndCustomer(customerId, managed));
+                        generateUni_FindCartByStatusAndCustomer(customerId, false))
+                .map(CartService::mapToDto);
     }
 
-    public Uni<Cart> generateUni_FindCartWithCustomer(UUID cartId, boolean managed) {
+    public static Uni<Cart> generateUni_FindCartWithCustomer(CartRepository repository, UUID cartId, boolean managed) {
         Uni<Cart> generatedUni;
         if (managed)
-            generatedUni = cartRepository.findCartWithCustomerManaged(cartId);
+            generatedUni = repository.findCartWithCustomerManaged(cartId);
         else
-            generatedUni = cartRepository.findCartWithCustomerStateless(cartId);
+            generatedUni = repository.findCartWithCustomerStateless(cartId);
 
         return generatedUni.onItem().ifNull().failWith(() ->
                 new EntityNotFoundException("The Cart does not exist! Id: " + cartId)

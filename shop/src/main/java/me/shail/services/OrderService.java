@@ -14,6 +14,7 @@ import me.shail.models.Order;
 import me.shail.models.Payment;
 import me.shail.models.enums.OrderStatus;
 import me.shail.models.enums.PaymentStatus;
+import me.shail.repositories.CartRepository;
 import me.shail.repositories.CustomerRepository;
 import me.shail.repositories.OrderRepository;
 import me.shail.repositories.PaymentRepository;
@@ -37,7 +38,7 @@ public class OrderService {
     PaymentRepository paymentRepository;
 
     @Inject
-    CartService cartService;
+    CartRepository cartRepository;
 
     public static OrderDto mapToDto(Order order) {
         Set<OrderItemDto> orderItems = order.orderItems == null || order.orderItems.isEmpty()
@@ -118,7 +119,7 @@ public class OrderService {
     public Uni<OrderDto> create(OrderDto orderDto) {
         log.debug("Request to create Order: {}", orderDto);
         UUID cartId = orderDto.cart().id();
-        return cartService.generateUni_FindCartWithCustomer(cartId, true)
+        return CartService.generateUni_FindCartWithCustomer(this.cartRepository, cartId, true)
                 .chain(cart -> {
                     Address shipmentAddress = AddressService.createFromDto(orderDto.shipmentAddress());
                     Order order = new Order(
