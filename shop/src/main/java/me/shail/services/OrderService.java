@@ -1,122 +1,194 @@
 package me.shail.services;
 
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import me.shail.dtos.OrderDto;
 import me.shail.dtos.OrderItemDto;
+import me.shail.interceptors.WithCustomStatelessSession;
 import me.shail.models.Address;
 import me.shail.models.Order;
+import me.shail.models.Payment;
 import me.shail.models.enums.OrderStatus;
-import me.shail.repositories.CartRepository;
+import me.shail.models.enums.PaymentStatus;
+import me.shail.repositories.CustomerRepository;
 import me.shail.repositories.OrderRepository;
 import me.shail.repositories.PaymentRepository;
 
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
-@Transactional
 @Slf4j
 @ApplicationScoped
 public class OrderService {
-    @SuppressWarnings("CdiInjectionPointsInspection")
     @Inject
     OrderRepository orderRepository;
-    @SuppressWarnings("CdiInjectionPointsInspection")
+
+    @Inject
+    PaymentService paymentService;
+
+    @Inject
+    CustomerRepository customerRepository;
+
     @Inject
     PaymentRepository paymentRepository;
-    @SuppressWarnings("CdiInjectionPointsInspection")
+
     @Inject
-    CartRepository cartRepository;
+    CartService cartService;
 
     public static OrderDto mapToDto(Order order) {
-        Set<OrderItemDto> orderItems = order.orderItems
+        Set<OrderItemDto> orderItems = order.orderItems == null || order.orderItems.isEmpty()
+                ? Collections.emptySet() : order.orderItems
                 .stream()
                 .map(OrderItemService::mapToDto)
                 .collect(Collectors.toSet());
+
+        UUID recentPaymentId = null;
+        if (order.payments != null && !order.payments.isEmpty()) {
+            recentPaymentId = order.payments.stream()
+                    .sorted(Comparator.comparing((Payment p) -> p.createdAt).reversed())
+                    .map(p -> p.id)
+                    .findFirst()
+                    .orElse(null);
+
+        }
 
         return new OrderDto(
                 order.id,
                 order.price,
                 order.status.name(),
                 order.shipped,
-                order.payment != null ? order.payment.id : null,
+                recentPaymentId,
                 AddressService.mapToDto(order.shipmentAddress),
                 orderItems,
                 CartService.mapToDto(order.cart)
         );
     }
 
-    public Uni<List<OrderDto>> findAll() {
+    @WithCustomStatelessSession
+    public Uni<List<OrderDto>> listAll() {
         log.debug("Request to get all Orders");
-        return this.orderRepository.findAll().list().onItem().transformToUni(orders -> {
-            return Uni.createFrom()
-                    .item(orders.stream()
-                            .map(OrderService::mapToDto)
-                            .toList()
-                    );
-        });
+        return this.orderRepository.listAllWithSubItems().onItem()
+                .transformToUni(orders -> Uni.createFrom()
+                        .item(orders.stream()
+                                .map(OrderService::mapToDto)
+                                .toList()
+                        ));
     }
 
-    public Uni<OrderDto> findById(UUID id) {
-        log.debug("Request to get Order: {}", id);
-        return this.orderRepository.findById(id).map(OrderService::mapToDto);
+    @WithCustomStatelessSession
+    public Uni<List<OrderDto>> findAllByCustomer(UUID customerId) {
+        return CustomerService.generateUni_FindCustomerById(customerRepository, customerId, false)
+                .chain(_ ->
+                        this.orderRepository.findOrderByCustomerId(customerId)
+                                .onItem().transformToUni(orders -> Uni.createFrom()
+                                        .item(orders.stream()
+                                                .map(OrderService::mapToDto)
+                                                .toList()
+                                        )
+                                )
+                );
+
     }
 
-    public Uni<List<OrderDto>> findAllByUser(UUID id) {
-        return this.orderRepository.findByCart_Customer_Id(id)
-                .onItem().transformToUni(orders -> {
-                    return Uni.createFrom().item(orders.stream().map(OrderService::mapToDto).toList());
-                });
-
+    @WithCustomStatelessSession
+    public Uni<OrderDto> findOrderByPaymentId(UUID paymentId) {
+        return PaymentService.generateUni_FindById(this.paymentRepository, paymentId, false)
+                .chain(payment -> this.orderRepository.findOrderByIdWithOrderItemsStateless(payment.order.id))
+                .onItem().transform(OrderService::mapToDto);
     }
 
+    public static Uni<Order> generateUni_FindById(OrderRepository repository, UUID orderId, boolean managed) {
+        Uni<Order> generatedUni;
+        if (managed)
+            generatedUni = repository.findOrderByIdWithOrderItemsManaged(orderId);
+        else
+            generatedUni = repository.findOrderByIdWithOrderItemsStateless(orderId);
+
+        return generatedUni
+                .onItem().ifNull().failWith(() ->
+                        new EntityNotFoundException("The Order does not exist! Id: " + orderId)
+                );
+    }
+
+    @WithTransaction
     public Uni<OrderDto> create(OrderDto orderDto) {
         log.debug("Request to create Order: {}", orderDto);
         UUID cartId = orderDto.cart().id();
-        return this.cartRepository.findById(cartId)
-                .onItem().ifNull().failWith(new IllegalStateException("Cart not found with Id: [" + cartId + "]"))
+        return cartService.generateUni_FindCartWithCustomer(cartId, true)
                 .chain(cart -> {
                     Address shipmentAddress = AddressService.createFromDto(orderDto.shipmentAddress());
                     Order order = new Order(
-                            BigDecimal.ZERO,
+                            orderDto.price(),
                             OrderStatus.CREATION,
-                            null,
-                            null,
+                            orderDto.shipped(),
+                            Collections.emptyList(),
                             shipmentAddress,
                             Collections.emptySet(),
                             cart
                     );
-                    return this.orderRepository.insert(order).replaceWith(order);
+                    return this.orderRepository.create(order);
                 }).onItem().transform(OrderService::mapToDto);
     }
 
-    public Uni<Boolean> delet(UUID id) {
-        log.debug("Request to delete Order: {}", id);
-        return this.orderRepository.findById(id)
-                .onItem()
-                .ifNull()
-                .failWith(() -> new IllegalStateException("Order with ID [" + id + "] cannot be found!"))
-                .chain(order -> {
-                    Uni<Boolean> deleteOrder = this.orderRepository.deleteById(id);
-                    if (order.payment != null) {
-                        return Uni.combine().all().unis(
-                                deleteOrder,
-                                this.paymentRepository.deleteById(order.payment.id)
-                        ).asTuple().onItem().transform(Tuple2::getItem1);
-                    }
-                    return deleteOrder;
-                });
+    @WithCustomStatelessSession
+    public Uni<OrderDto> findById(UUID orderId) {
+        log.debug("Request to get Order: {}", orderId);
+        return generateUni_FindById(this.orderRepository, orderId, false)
+                .map(OrderService::mapToDto);
     }
 
+    @WithCustomStatelessSession
     public Uni<Boolean> existsById(UUID id) {
         return this.orderRepository.existsById(id);
+    }
+
+    @WithTransaction
+    public Uni<Boolean> cancel(UUID orderId) {
+        log.debug("Request to cancel Order: {}", orderId);
+
+        return generateUni_FindById(this.orderRepository, orderId, true)
+                .chain(this::cancelOrderBasedOnStatus); // Clean delegation
+    }
+
+    private Uni<Boolean> cancelOrderBasedOnStatus(Order order) {
+        return switch (order.status) {
+            case OrderStatus.DELIVERED, OrderStatus.SHIPPED -> Uni.createFrom()
+                    .failure(new IllegalStateException("Order has already been shipped/delivered." +
+                            " Try starting a return once delivered"));
+
+            case OrderStatus.PAID -> {
+                List<Uni<Boolean>> refundUnis = order.payments.stream()
+                        .filter(p -> p != null
+                                && (p.status == PaymentStatus.ACCEPTED || p.status == PaymentStatus.PENDING)
+                        )
+                        .map(payment -> this.paymentService.generateRefund(payment.id))
+                        .toList();
+
+                yield Uni.createFrom().item(refundUnis)
+                        .chain(list -> {
+                            if (list.isEmpty()) {
+                                order.status = OrderStatus.CANCELLED;
+                                return Uni.createFrom().item(Boolean.TRUE);
+                            }
+
+                            return Uni.join().all(refundUnis).andCollectFailures()
+                                    .onItem().transform
+                                            (results -> {
+                                                order.status = OrderStatus.CANCELLED;
+                                                return results.stream().allMatch(Boolean.TRUE::equals);
+                                            });
+                        });
+
+            }
+
+            default -> {
+                order.status = OrderStatus.CANCELLED;
+                yield Uni.createFrom().item(Boolean.TRUE);
+            }
+        };
     }
 }

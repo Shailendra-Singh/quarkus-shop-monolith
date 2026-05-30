@@ -1,17 +1,24 @@
 package me.shail.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import me.shail.models.base.AbstractEntity;
-
-import java.util.Objects;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @NoArgsConstructor
-@ToString(callSuper = true)
-@Table(name = "reviews")
+@ToString(callSuper = true, exclude = "product")
+@Table(
+        name = "reviews",
+        indexes = {
+                @Index(name = "idx_reviews_product_rating", columnList = "product_id, rating DESC")
+        }
+)
 public class Review extends AbstractEntity {
     @NotNull
     @Column(name = "title", nullable = false)
@@ -22,15 +29,18 @@ public class Review extends AbstractEntity {
     public String description;
 
     @NotNull
+    @Min(1)
+    @Max(5)
     @Column(name = "rating", nullable = false)
-    public Long rating;
+    public Integer rating;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id") // This creates the foreign key column
+    @JoinColumn(name = "product_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     public Product product;
 
-    public Review(@NotNull String title, @NotNull String description, @NotNull Long rating, @NotNull Product product) {
+    public Review(@NotNull String title, @NotNull String description, @NotNull Integer rating, @NotNull Product product) {
         this.title = title;
         this.description = description;
         this.rating = rating;
@@ -38,17 +48,15 @@ public class Review extends AbstractEntity {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Review review = (Review) obj;
-        return Objects.equals(title, review.title)
-                && Objects.equals(description, review.description)
-                && Objects.equals(rating, review.rating)
-                && Objects.equals(product, review.product);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Review review)) return false;
+        return id != null && id.equals(review.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(title, description, rating, product);
+        // Use a constant or just the ID class
+        return getClass().hashCode();
     }
 }
