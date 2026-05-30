@@ -2,12 +2,11 @@ package me.shail.helpers.data.faker;
 
 import me.shail.dtos.ReviewDto;
 import me.shail.helpers.Constants;
-import me.shail.helpers.data.faker.base.EntityDtoFaker;
 import net.datafaker.Faker;
 
 import java.util.List;
 
-public class ReviewDtoFaker implements EntityDtoFaker<ReviewDto> {
+public class ReviewDtoFaker {
     private final static Faker faker = Constants.FAKER;
 
     private ReviewDto generateReview() {
@@ -19,8 +18,6 @@ public class ReviewDtoFaker implements EntityDtoFaker<ReviewDto> {
         );
     }
 
-
-    @Override
     public ReviewDto generate() {
         return generateReview();
     }

@@ -5,12 +5,12 @@ import jakarta.validation.constraints.NotNull;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import me.shail.models.base.AbstractEntity;
-
-import java.util.Objects;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @NoArgsConstructor
-@ToString(callSuper = true)
+@ToString(callSuper = true, exclude = "product")
 @Table(name = "reviews")
 public class Review extends AbstractEntity {
     @NotNull
@@ -27,7 +27,8 @@ public class Review extends AbstractEntity {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id") // This creates the foreign key column
+    @JoinColumn(name = "product_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     public Product product;
 
     public Review(@NotNull String title, @NotNull String description, @NotNull Long rating, @NotNull Product product) {
@@ -38,17 +39,15 @@ public class Review extends AbstractEntity {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Review review = (Review) obj;
-        return Objects.equals(title, review.title)
-                && Objects.equals(description, review.description)
-                && Objects.equals(rating, review.rating)
-                && Objects.equals(product, review.product);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Review review)) return false;
+        return id != null && id.equals(review.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(title, description, rating, product);
+        // Use a constant or just the ID class
+        return getClass().hashCode();
     }
 }

@@ -39,4 +39,12 @@ public final class TestDataFactory {
     public static ProductDto generateMockProductDto() {
         return ProductDataFactory.generate(null);
     }
+
+    public static List<ReviewDto> generateMockReviewDtos(int count) {
+        return ReviewDataFactory.generate(count);
+    }
+
+    public static ReviewDto generateMockReviewDto() {
+        return ReviewDataFactory.generate();
+    }
 }

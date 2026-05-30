@@ -11,15 +11,14 @@ import org.hibernate.annotations.OnDeleteAction;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
 @Entity
 @NoArgsConstructor
 @Table(name = "products")
-// Exclude collections to prevent infinite loops and unintentional lazy loading triggers
-@ToString(callSuper = true, exclude = {"reviews", "categories"})
+
+@ToString(callSuper = true)
 public class Product extends AbstractEntity {
 
     public static final String TABLE_PRODUCT_CATEGORIES = "product_categories";
@@ -43,9 +42,6 @@ public class Product extends AbstractEntity {
 
     @Column(name = "sales_counter")
     public Integer salesCounter = 0;
-
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    public Set<Review> reviews = new LinkedHashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

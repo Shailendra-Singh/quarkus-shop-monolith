@@ -15,6 +15,7 @@ CREATE TABLE categories
     last_modified_date TIMESTAMP WITHOUT TIME ZONE,
     name               VARCHAR(255)                NOT NULL,
     description        VARCHAR(255)                NOT NULL,
+    parent_category_id UUID,
     CONSTRAINT pk_categories PRIMARY KEY (id)
 );
 
@@ -72,6 +73,13 @@ CREATE TABLE payments
     CONSTRAINT pk_payments PRIMARY KEY (id)
 );
 
+CREATE TABLE product_categories
+(
+    category_id UUID NOT NULL,
+    product_id  UUID NOT NULL,
+    CONSTRAINT pk_product_categories PRIMARY KEY (category_id, product_id)
+);
+
 CREATE TABLE products
 (
     id                 UUID                        NOT NULL,
@@ -82,7 +90,6 @@ CREATE TABLE products
     price              DECIMAL(10, 2)              NOT NULL,
     status             VARCHAR(255)                NOT NULL,
     sales_counter      INTEGER,
-    category_id        UUID,
     CONSTRAINT pk_products PRIMARY KEY (id)
 );
 
@@ -98,11 +105,20 @@ CREATE TABLE reviews
     CONSTRAINT pk_reviews PRIMARY KEY (id)
 );
 
+ALTER TABLE product_categories
+    ADD CONSTRAINT uc_3d0d0e623423b7bf1c17a4d5d UNIQUE (product_id, category_id);
+
+ALTER TABLE categories
+    ADD CONSTRAINT uc_categories_name UNIQUE (name);
+
 ALTER TABLE payments
     ADD CONSTRAINT uc_payments_payment_reference UNIQUE (payment_reference_id);
 
 ALTER TABLE carts
     ADD CONSTRAINT FK_CARTS_ON_CUSTOMER FOREIGN KEY (customer_id) REFERENCES customers (id);
+
+ALTER TABLE categories
+    ADD CONSTRAINT FK_CATEGORIES_ON_PARENT_CATEGORY FOREIGN KEY (parent_category_id) REFERENCES categories (id);
 
 ALTER TABLE orders
     ADD CONSTRAINT FK_ORDERS_ON_CART FOREIGN KEY (cart_id) REFERENCES carts (id);
@@ -116,8 +132,11 @@ ALTER TABLE order_items
 ALTER TABLE payments
     ADD CONSTRAINT FK_PAYMENTS_ON_ORDER FOREIGN KEY (order_id) REFERENCES orders (id);
 
-ALTER TABLE products
-    ADD CONSTRAINT FK_PRODUCTS_ON_CATEGORY FOREIGN KEY (category_id) REFERENCES categories (id);
-
 ALTER TABLE reviews
-    ADD CONSTRAINT FK_REVIEWS_ON_PRODUCT FOREIGN KEY (product_id) REFERENCES products (id);
+    ADD CONSTRAINT FK_REVIEWS_ON_PRODUCT FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE;
+
+ALTER TABLE product_categories
+    ADD CONSTRAINT fk_procat_on_category FOREIGN KEY (category_id) REFERENCES categories (id);
+
+ALTER TABLE product_categories
+    ADD CONSTRAINT fk_procat_on_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE;
