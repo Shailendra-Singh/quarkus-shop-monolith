@@ -115,7 +115,7 @@ public class CustomerServiceIntegrationTest extends BaseTest {
                 , throwable -> {
             assertNotNull(throwable);
             assertEquals(EntityNotFoundException.class, throwable.getClass());
-            assertTrue(throwable.getMessage().toLowerCase().contains("doesn't exist"));
+            assertTrue(throwable.getMessage().toLowerCase().contains("does not exist"));
         });
     }
 
@@ -194,7 +194,7 @@ public class CustomerServiceIntegrationTest extends BaseTest {
                                 .invoke(Assertions::assertTrue)
                 , throwable -> {
                     assertEquals(EntityNotFoundException.class, throwable.getClass());
-                    assertTrue(throwable.getMessage().toLowerCase().contains("doesn't exist"));
+                    assertTrue(throwable.getMessage().toLowerCase().contains("does not exist"));
                 });
     }
 }

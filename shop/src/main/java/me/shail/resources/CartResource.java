@@ -36,13 +36,13 @@ public class CartResource {
     }
 
     @GET
-    @Path("/customer/{customerId}")
+    @Path("/customers/{customerId}")
     public Uni<CartDto> getActiveCart(@PathParam("customerId") UUID customerId) {
         return this.cartService.getActiveCart(customerId);
     }
 
     @POST
-    @Path("/customer/{customerId}")
+    @Path("/customers/{customerId}")
     public Uni<CartDto> create(@PathParam("customerId") UUID customerId) {
         return this.cartService.create(customerId);
     }

@@ -18,6 +18,9 @@ import java.util.UUID;
 @Slf4j
 @ApplicationScoped
 public class CustomerService {
+
+    public final static String CUSTOMER_NOT_EXIST_ERROR_MSG = "Customer does not exist. ID: ";
+
     @Inject
     CustomerRepository customerRepository;
 
@@ -64,7 +67,7 @@ public class CustomerService {
         return this.customerRepository
                 .findByIdStateless(id)
                 .onItem().ifNull().failWith(() ->
-                        new EntityNotFoundException("Customer doesn't exist. ID: " + id)
+                        new EntityNotFoundException(getCustomerDoesNotExistErrorMessage(id))
                 )
                 .onItem().transform(CustomerService::mapToDto);
     }
@@ -86,7 +89,7 @@ public class CustomerService {
                 .onItem().transformToUni(rowsAffected -> {
                     if (rowsAffected == 0)
                         return Uni.createFrom().failure(
-                                new EntityNotFoundException("Customer doesn't exist. ID: " + id)
+                                new EntityNotFoundException(getCustomerDoesNotExistErrorMessage(id))
                         );
 
                     return Uni.createFrom().item(rowsAffected == 1);
@@ -104,6 +107,10 @@ public class CustomerService {
         return generatedUni
                 .onItem()
                 .ifNull()
-                .failWith(new EntityNotFoundException("The Customer does not exist!"));
+                .failWith(new EntityNotFoundException(getCustomerDoesNotExistErrorMessage(customerId)));
+    }
+
+    public static String getCustomerDoesNotExistErrorMessage(UUID customerId) {
+        return CUSTOMER_NOT_EXIST_ERROR_MSG + customerId;
     }
 }

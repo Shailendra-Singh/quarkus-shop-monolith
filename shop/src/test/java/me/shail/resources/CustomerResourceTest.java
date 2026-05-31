@@ -6,6 +6,7 @@ import io.restassured.common.mapper.TypeRef;
 import me.shail.dtos.CustomerDto;
 import me.shail.helpers.data.TestDataFactory;
 import me.shail.resources.interceptors.JsonTest;
+import me.shail.services.CustomerService;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.junit.jupiter.api.Test;
 
@@ -126,7 +127,7 @@ public class CustomerResourceTest {
         response
                 .then()
                 .statusCode(RestResponse.StatusCode.NOT_FOUND)
-                .body("message", equalTo("Customer doesn't exist. ID: " + nonExistentId))
+                .body("message", equalTo(CustomerService.getCustomerDoesNotExistErrorMessage(nonExistentId)))
                 .body("error", equalTo("Not Found"))
                 .body("timestamp", notNullValue());
 
@@ -178,8 +179,10 @@ public class CustomerResourceTest {
         assertTrue(returnedCustomersSet.containsAll(deletedCustomerIds));
     }
 
-    /// Note: `testFindAllByState_WhenNoCustomersExist` cannot be tested
-    /// Reason: Cross-contamination from other tests
+    /*
+     * Note: `testFindAllByState_WhenNoCustomersExist` cannot be tested
+     * Reason: Cross-contamination from other tests
+     * */
 
     // --| 3. Delete Customer - Tests |---------------------------------------------------------------------------------
     @Test
@@ -229,7 +232,7 @@ public class CustomerResourceTest {
         response
                 .then()
                 .statusCode(RestResponse.StatusCode.NOT_FOUND)
-                .body("message", equalTo("Customer doesn't exist. ID: " + nonExistentId))
+                .body("message", equalTo(CustomerService.getCustomerDoesNotExistErrorMessage(nonExistentId)))
                 .body("error", equalTo("Not Found"))
                 .body("timestamp", notNullValue());
     }

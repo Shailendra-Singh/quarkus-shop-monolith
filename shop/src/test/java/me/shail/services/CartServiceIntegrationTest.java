@@ -5,7 +5,6 @@ import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
-import me.shail.services.common.BaseTest;
 import me.shail.dtos.CustomerDto;
 import me.shail.helpers.data.TestDataFactory;
 import me.shail.models.Cart;
@@ -13,6 +12,7 @@ import me.shail.models.Customer;
 import me.shail.models.enums.CartStatus;
 import me.shail.repositories.CartRepository;
 import me.shail.repositories.CustomerRepository;
+import me.shail.services.common.BaseTest;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 
@@ -180,7 +180,8 @@ public class CartServiceIntegrationTest extends BaseTest {
         );
     }
 
-    // --| 2. Find Cart - Tests |---------------------------------------------------------------------------------------
+    // --| 3. Find Cart - Tests |---------------------------------------------------------------------------------------
+
     @Test
     @RunOnVertxContext
     public void testFind_WhenCartDoesNotExist(UniAsserter asserter) {
@@ -296,7 +297,8 @@ public class CartServiceIntegrationTest extends BaseTest {
         );
     }
 
-    // --| 3. Delete Cart - Tests |-------------------------------------------------------------------------------------
+    // --| 4. Delete Cart - Tests |-------------------------------------------------------------------------------------
+
     @Test
     @RunOnVertxContext
     public void testDelete_WhenCartDoesNotExist(UniAsserter asserter) {
@@ -306,7 +308,7 @@ public class CartServiceIntegrationTest extends BaseTest {
                         cartService.delete(nonExistentCart)
                 , throwable -> {
             assertEquals(EntityNotFoundException.class, throwable.getClass());
-            assertTrue(throwable.getMessage().toLowerCase().contains("no cart found"));
+                    assertTrue(throwable.getMessage().toLowerCase().contains("cart does not exist"));
         });
     }
 
@@ -326,9 +328,9 @@ public class CartServiceIntegrationTest extends BaseTest {
 
         // Ensure delete succeeds
         asserter.execute(() ->
-                        cartService.delete(createdCartId.get()).invoke(returnedCart -> {
-                            assertNotNull(returnedCart);
-                            assertTrue(returnedCart);
+                cartService.delete(createdCartId.get()).invoke(deleteStatus -> {
+                    assertNotNull(deleteStatus);
+                    assertTrue(deleteStatus);
                         })
         );
 

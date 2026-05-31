@@ -27,7 +27,7 @@ public class GlobalExceptionMapper {
     // Catch IllegalStateException and convert it into HTTP 404
     @ServerExceptionMapper(IllegalStateException.class)
     public Response handleBadRequest(IllegalStateException exception) {
-        return Response.status(Response.Status.NOT_FOUND)
+        return Response.status(Response.Status.BAD_REQUEST)
                 .entity(Map.of(
                         "timestamp", Instant.now().toString(),
                         "status", Response.Status.BAD_REQUEST.getStatusCode(),
@@ -40,7 +40,7 @@ public class GlobalExceptionMapper {
     // Catch OperationNotSupportedException and convert it into HTTP 404
     @ServerExceptionMapper(OperationNotSupportedException.class)
     public Response handleBadRequest(OperationNotSupportedException exception) {
-        return Response.status(Response.Status.NOT_FOUND)
+        return Response.status(Response.Status.FORBIDDEN)
                 .entity(Map.of(
                         "timestamp", Instant.now().toString(),
                         "status", Response.Status.FORBIDDEN.getStatusCode(),

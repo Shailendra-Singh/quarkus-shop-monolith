@@ -20,6 +20,11 @@ import java.util.stream.Collectors;
 @Slf4j
 @ApplicationScoped
 public class CartService {
+
+    public final static String CART_NOT_EXIST_ERROR_MSG = "Cart does not exist. ID: ";
+    public final static String ACTIVE_CART_EXIST_ERROR_MSG = "Active cart already exists.";
+    public final static String MULTIPLE_ACTIVE_CART_EXIST_ERROR_MSG = "Multiple active carts detected for customer: ";
+
     @Inject
     CartRepository cartRepository;
 
@@ -59,7 +64,7 @@ public class CartService {
         return CustomerService.generateUni_FindCustomerById(this.customerRepository, customerId, true)
                 .chain(customer ->
                         generateUni_FindCartByStatusAndCustomer(customer.id, true)
-                                .onItem().ifNotNull().failWith(() -> new IllegalStateException("Active cart already exists."))
+                                .onItem().ifNotNull().failWith(() -> new IllegalStateException(ACTIVE_CART_EXIST_ERROR_MSG))
                                 .chain(_ -> {
                                     var cart = new Cart(customer, CartStatus.NEW);
                                     return this.cartRepository.create(cart);
@@ -84,7 +89,7 @@ public class CartService {
                 .onItem().transformToUni(rowsAffected -> {
                     if (rowsAffected == 0)
                         return Uni.createFrom().failure(
-                                new EntityNotFoundException("Cannot delete: No Cart found with id:" + id)
+                                new EntityNotFoundException(getCartDoesNotExistErrorMessage(id))
                         );
 
                     return Uni.createFrom().item(rowsAffected > 0);
@@ -107,7 +112,7 @@ public class CartService {
             generatedUni = repository.findCartWithCustomerStateless(cartId);
 
         return generatedUni.onItem().ifNull().failWith(() ->
-                new EntityNotFoundException("The Cart does not exist! Id: " + cartId)
+                new EntityNotFoundException(getCartDoesNotExistErrorMessage(cartId))
         );
     }
 
@@ -128,8 +133,16 @@ public class CartService {
                         return Uni.createFrom().item(carts.getFirst());
 
                     return Uni.createFrom().failure(
-                            new IllegalStateException("Multiple active carts detected for customer: " + customerId)
+                            new IllegalStateException(getMultipleActiveCartExistErrorMsg(customerId))
                     );
                 });
+    }
+
+    public static String getMultipleActiveCartExistErrorMsg(UUID customerId) {
+        return MULTIPLE_ACTIVE_CART_EXIST_ERROR_MSG + customerId;
+    }
+
+    public static String getCartDoesNotExistErrorMessage(UUID cartId) {
+        return CART_NOT_EXIST_ERROR_MSG + cartId;
     }
 }
