@@ -1,4 +1,4 @@
-package me.shail.common;
+package me.shail.services.common;
 
 import jakarta.inject.Inject;
 import org.hibernate.reactive.mutiny.Mutiny;

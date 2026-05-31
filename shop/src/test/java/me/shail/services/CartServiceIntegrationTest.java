@@ -5,7 +5,7 @@ import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
-import me.shail.common.BaseTest;
+import me.shail.services.common.BaseTest;
 import me.shail.dtos.CustomerDto;
 import me.shail.helpers.data.TestDataFactory;
 import me.shail.models.Cart;
