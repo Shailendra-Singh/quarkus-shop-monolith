@@ -25,6 +25,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @ApplicationScoped
 public class OrderService {
+
+    public final static String ORDER_NOT_EXISTS_ERROR_MSG = "The Order does not exist! Id: ";
+
     @Inject
     OrderRepository orderRepository;
 
@@ -179,7 +182,11 @@ public class OrderService {
 
         return generatedUni
                 .onItem().ifNull().failWith(() ->
-                        new EntityNotFoundException("The Order does not exist! Id: " + orderId)
+                        new EntityNotFoundException(getOrderNotExistsErrorMsg(orderId))
                 );
+    }
+
+    public static String getOrderNotExistsErrorMsg(UUID orderId) {
+        return ORDER_NOT_EXISTS_ERROR_MSG + orderId;
     }
 }

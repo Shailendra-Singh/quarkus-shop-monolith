@@ -33,15 +33,14 @@ public class CartResourceTest {
     // --| 1. Active Cart - Tests |-------------------------------------------------------------------------------------
 
     @Test
-
     public void testGetActiveCart_WhenCustomerDoesNotExist() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         UUID nonExistentId = UUID.randomUUID();
 
-        // 2. Act
+        /* --- 2. Act --- */
         var response = given().get(CART_ROOT_URL + "/customers/{id}", nonExistentId);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         response
                 .then()
                 .statusCode(RestResponse.StatusCode.NOT_FOUND)
@@ -60,13 +59,13 @@ public class CartResourceTest {
     @Test
     public void testCreate_WhenCustomerDoesNotExist() {
 
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         UUID nonExistentId = UUID.randomUUID();
 
-        // 2. Act
+        /* --- 2. Act --- */
         var response = given().post(CART_ROOT_URL + "/customers/{id}", nonExistentId);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         response
                 .then()
                 .statusCode(RestResponse.StatusCode.NOT_FOUND)
@@ -77,7 +76,7 @@ public class CartResourceTest {
 
     @Test
     public void testCreate_WhenCustomerHasActiveCart() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         CustomerDto inputDto = TestDataFactory.generateMockCustomerDto();
 
         CustomerDto createdCustomer = given()
@@ -89,7 +88,7 @@ public class CartResourceTest {
                 .body()
                 .as(CustomerDto.class);
 
-        // 2. Act
+        /* --- 2. Act --- */
         CartDto _ = given()
                 .post(CART_ROOT_URL + "/customers/{id}", createdCustomer.id())
                 .then()
@@ -98,7 +97,7 @@ public class CartResourceTest {
                 .body()
                 .as(CartDto.class);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         given()
                 .post(CART_ROOT_URL + "/customers/{id}", createdCustomer.id())
                 .then()
@@ -110,7 +109,7 @@ public class CartResourceTest {
 
     @Test
     public void testCreate() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         CustomerDto inputDto = TestDataFactory.generateMockCustomerDto();
 
         CustomerDto createdCustomer = given()
@@ -122,7 +121,7 @@ public class CartResourceTest {
                 .body()
                 .as(CustomerDto.class);
 
-        // 2. Act
+        /* --- 2. Act --- */
         CartDto returnedCart = given()
                 .post(CART_ROOT_URL + "/customers/{id}", createdCustomer.id())
                 .then()
@@ -131,7 +130,7 @@ public class CartResourceTest {
                 .body()
                 .as(CartDto.class);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         assertNotNull(returnedCart);
         assertNotNull(returnedCart.id());
         assertEquals(returnedCart.customerDto(), createdCustomer);
@@ -141,13 +140,13 @@ public class CartResourceTest {
 
     @Test
     public void testFind_WhenCartDoesNotExist() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         UUID nonExistentId = UUID.randomUUID();
 
-        // 2. Act
+        /* --- 2. Act --- */
         var response = given().get(CART_ROOT_URL + "/{id}", nonExistentId);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         response
                 .then()
                 .statusCode(RestResponse.StatusCode.NOT_FOUND)
@@ -158,7 +157,7 @@ public class CartResourceTest {
 
     @Test
     public void testFindById() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         CustomerDto inputDto = TestDataFactory.generateMockCustomerDto();
 
         CustomerDto createdCustomer = given()
@@ -178,7 +177,7 @@ public class CartResourceTest {
                 .body()
                 .as(CartDto.class);
 
-        // 2. Act
+        /* --- 2. Act --- */
         CartDto returnedCart = given()
                 .get(CART_ROOT_URL + "/{id}", createdCart.id())
                 .then()
@@ -187,7 +186,7 @@ public class CartResourceTest {
                 .body()
                 .as(CartDto.class);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         assertNotNull(returnedCart);
         assertNotNull(returnedCart.id());
         assertEquals(returnedCart, createdCart);
@@ -195,7 +194,7 @@ public class CartResourceTest {
 
     @Test
     public void testFindAllActiveCarts() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         Set<UUID> createdCarts = new HashSet<>();
         for (CustomerDto inputCustomerDto : TestDataFactory.generateMockCustomerDtos(5)) {
             CustomerDto createdCustomer = given()
@@ -217,7 +216,7 @@ public class CartResourceTest {
             createdCarts.add(createdCartId);
         }
 
-        // 2. Act
+        /* --- 2. Act --- */
         Set<UUID> allCartIds = given()
                 .get(CART_ROOT_URL + "/active")
                 .then()
@@ -227,13 +226,13 @@ public class CartResourceTest {
                 .as(new TypeRef<List<CartDto>>() {
                 }).stream().map(CartDto::id).collect(Collectors.toUnmodifiableSet());
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         assertTrue(allCartIds.containsAll(createdCarts));
     }
 
     @Test
     public void testListAll() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         Set<UUID> createdCarts = new HashSet<>();
         for (CustomerDto inputCustomerDto : TestDataFactory.generateMockCustomerDtos(5)) {
             CustomerDto createdCustomer = given()
@@ -255,7 +254,7 @@ public class CartResourceTest {
             createdCarts.add(createdCartId);
         }
 
-        // 2. Act
+        /* --- 2. Act --- */
         Set<UUID> allCartIds = given()
                 .get(CART_ROOT_URL)
                 .then()
@@ -265,7 +264,7 @@ public class CartResourceTest {
                 .as(new TypeRef<List<CartDto>>() {
                 }).stream().map(CartDto::id).collect(Collectors.toUnmodifiableSet());
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         assertTrue(allCartIds.containsAll(createdCarts));
     }
 
@@ -273,13 +272,13 @@ public class CartResourceTest {
 
     @Test
     public void testDelete_WhenCartDoesNotExist() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         UUID nonExistentId = UUID.randomUUID();
 
-        // 2. Act
+        /* --- 2. Act --- */
         var response = given().delete(CART_ROOT_URL + "/{id}", nonExistentId);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         response
                 .then()
                 .statusCode(RestResponse.StatusCode.NOT_FOUND)
@@ -290,7 +289,7 @@ public class CartResourceTest {
 
     @Test
     public void testDelete() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         CustomerDto inputDto = TestDataFactory.generateMockCustomerDto();
 
         CustomerDto createdCustomer = given()
@@ -310,13 +309,13 @@ public class CartResourceTest {
                 .body()
                 .as(CartDto.class);
 
-        // 2. Act
+        /* --- 2. Act --- */
         given()
                 .delete(CART_ROOT_URL + "/{id}", createdCart.id())
                 .then()
                 .statusCode(RestResponse.StatusCode.NO_CONTENT);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         CartDto returnedCart = given()
                 .get(CART_ROOT_URL + "/{id}", createdCart.id())
                 .then()

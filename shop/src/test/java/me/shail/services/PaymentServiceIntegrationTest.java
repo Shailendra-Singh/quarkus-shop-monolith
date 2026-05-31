@@ -5,11 +5,11 @@ import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
-import me.shail.services.common.BaseTest;
 import me.shail.dtos.CustomerDto;
 import me.shail.dtos.OrderDto;
 import me.shail.helpers.data.TestDataFactory;
 import me.shail.models.enums.PaymentStatus;
+import me.shail.services.common.BaseTest;
 import org.junit.jupiter.api.Test;
 
 import javax.naming.OperationNotSupportedException;
@@ -195,7 +195,7 @@ public class PaymentServiceIntegrationTest extends BaseTest {
         // Create Payment
         asserter.execute(() -> paymentService.create(createdOrderId.get()));
 
-        // Assert impossible max amount: test order has amount of 10
+        // Assert impossible max amount: test order had amount of 10
         asserter.execute(() -> paymentService
                 .findByPriceRange(BigDecimal.valueOf(9)).invoke(paymentDtos -> {
                     assertNotNull(paymentDtos);
@@ -203,7 +203,7 @@ public class PaymentServiceIntegrationTest extends BaseTest {
                 })
         );
 
-        // Assert always possible max amount: test order has amount of 10
+        // Assert always possible max amount: test order had amount of 10
         asserter.execute(() -> paymentService
                 .findByPriceRange(BigDecimal.valueOf(11)).invoke(paymentDtos -> {
                     assertNotNull(paymentDtos);

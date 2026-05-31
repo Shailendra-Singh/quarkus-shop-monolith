@@ -5,12 +5,12 @@ import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
-import me.shail.services.common.BaseTest;
 import me.shail.dtos.CartDto;
 import me.shail.dtos.CustomerDto;
 import me.shail.dtos.OrderDto;
 import me.shail.helpers.data.TestDataFactory;
 import me.shail.models.enums.OrderStatus;
+import me.shail.services.common.BaseTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -336,7 +336,6 @@ public class OrderServiceIntegrationTest extends BaseTest {
                 .invoke(paymentDto -> createdPaymentId.set(paymentDto.id()))
         );
 
-        // Assert impossible max amount: test order has minimum of 10
         asserter.execute(() -> orderService.findOrderByPaymentId(createdPaymentId.get()).invoke(order -> {
             assertNotNull(order);
             assertNotNull(order.paymentId());

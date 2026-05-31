@@ -30,10 +30,10 @@ public class CustomerResourceTest {
 
     @Test
     public void testCreate() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         CustomerDto inputDto = TestDataFactory.generateMockCustomerDto();
 
-        // 2. Act
+        /* --- 2. Act --- */
         CustomerDto createdCustomer = given()
                 .body(inputDto)
                 .post()
@@ -43,7 +43,7 @@ public class CustomerResourceTest {
                 .body()
                 .as(CustomerDto.class);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         assertNotNull(createdCustomer);
         assertNotNull(createdCustomer.id());
         assertEquals(inputDto.email(), createdCustomer.email());
@@ -53,7 +53,7 @@ public class CustomerResourceTest {
 
     @Test
     public void testFindAll() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         var inputCustomerDtos = TestDataFactory.generateMockCustomerDtos(5);
 
         List<CustomerDto> createdCustomers = new ArrayList<>();
@@ -69,7 +69,7 @@ public class CustomerResourceTest {
             createdCustomers.add(createdCustomer);
         }
 
-        // 2. Act
+        /* --- 2. Act --- */
         List<CustomerDto> fetchedCustomers = given()
                 .get()
                 .then()
@@ -79,7 +79,7 @@ public class CustomerResourceTest {
                 .as(new TypeRef<>() {
                 });
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         assertNotNull(fetchedCustomers);
         assertFalse(fetchedCustomers.isEmpty());
         for (CustomerDto createdCustomer : createdCustomers)
@@ -89,7 +89,7 @@ public class CustomerResourceTest {
     @Test
     public void testFindById() {
 
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         CustomerDto inputDto = TestDataFactory.generateMockCustomerDto();
 
         CustomerDto createdCustomer = given()
@@ -101,7 +101,7 @@ public class CustomerResourceTest {
                 .body()
                 .as(CustomerDto.class);
 
-        // 2. Act
+        /* --- 2. Act --- */
         CustomerDto foundCustomer = given()
                 .get("/{id}", createdCustomer.id())
                 .then()
@@ -110,20 +110,20 @@ public class CustomerResourceTest {
                 .body()
                 .as(CustomerDto.class);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         assertEquals(createdCustomer, foundCustomer);
     }
 
     @Test
     public void testFindById_WithInvalidId() {
 
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         UUID nonExistentId = UUID.randomUUID();
 
-        // 2. Act
+        /* --- 2. Act --- */
         var response = given().get("/{id}", nonExistentId);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         response
                 .then()
                 .statusCode(RestResponse.StatusCode.NOT_FOUND)
@@ -135,7 +135,7 @@ public class CustomerResourceTest {
 
     @Test
     public void testFindAllByState() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         var customers = TestDataFactory.generateMockCustomerDtos(10);
         List<UUID> createdCustomerIds = new ArrayList<>();
 
@@ -152,7 +152,7 @@ public class CustomerResourceTest {
         }
 
         List<UUID> deletedCustomerIds = new ArrayList<>();
-        // 2. Act
+        /* --- 2. Act --- */
         for (int i = 0; i < 4; i++) {
             given()
                     .delete("/{id}", createdCustomerIds.get(i))
@@ -187,7 +187,7 @@ public class CustomerResourceTest {
     // --| 3. Delete Customer - Tests |---------------------------------------------------------------------------------
     @Test
     public void testDelete() {
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         CustomerDto inputDto = TestDataFactory.generateMockCustomerDto();
 
         CustomerDto createdCustomer = given()
@@ -199,13 +199,13 @@ public class CustomerResourceTest {
                 .body()
                 .as(CustomerDto.class);
 
-        // 2. Act
+        /* --- 2. Act --- */
         given()
                 .delete("/{id}", createdCustomer.id())
                 .then()
                 .statusCode(RestResponse.StatusCode.NO_CONTENT);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         List<CustomerDto> disabledCustomers = given()
                 .get("/status/disabled")
                 .then()
@@ -222,13 +222,13 @@ public class CustomerResourceTest {
     @Test
     public void testDelete_WhenCustomerDoesNotExist() {
 
-        // 1. Arrange
+        /* --- 1. Arrange --- */
         UUID nonExistentId = UUID.randomUUID();
 
-        // 2. Act
+        /* --- 2. Act --- */
         var response = given().delete("/{id}", nonExistentId);
 
-        // 3. Assert
+        /* --- 3. Assert --- */
         response
                 .then()
                 .statusCode(RestResponse.StatusCode.NOT_FOUND)

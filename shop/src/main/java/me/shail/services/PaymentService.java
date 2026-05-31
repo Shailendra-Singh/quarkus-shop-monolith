@@ -22,6 +22,8 @@ import java.util.UUID;
 @ApplicationScoped
 public class PaymentService {
 
+    public final static String PAYMENT_NOT_EXIST_ERROR_MSG = "Payment does not exist. ID: ";
+
     @Inject
     PaymentRepository paymentRepository;
 
@@ -84,7 +86,6 @@ public class PaymentService {
                 .chain(_ -> Uni.createFrom().item(Boolean.TRUE));
     }
 
-
     public static Uni<Payment> generateUni_FindById(PaymentRepository repository,
                                                     UUID paymentId,
                                                     boolean managed) {
@@ -95,6 +96,10 @@ public class PaymentService {
             generatedUni = repository.findByIdStateless(paymentId);
         return generatedUni
                 .onItem()
-                .ifNull().failWith(() -> new EntityNotFoundException("Payment does not exist. ID: " + paymentId));
+                .ifNull().failWith(() -> new EntityNotFoundException(getPaymentNotExistErrorMsg(paymentId)));
+    }
+
+    public static String getPaymentNotExistErrorMsg(UUID paymentId) {
+        return PAYMENT_NOT_EXIST_ERROR_MSG + paymentId;
     }
 }
