@@ -5,6 +5,7 @@ import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
+import me.shail.common.BaseTest;
 import me.shail.helpers.data.TestDataFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,7 @@ import static org.junit.jupiter.api.AssertionsKt.assertNotNull;
 import static org.junit.jupiter.api.AssertionsKt.assertNull;
 
 @QuarkusTest
-public class CategoryServiceIntegrationTest {
+public class CategoryServiceIntegrationTest extends BaseTest {
 
     @Inject
     CategoryService categoryService;
@@ -195,7 +196,7 @@ public class CategoryServiceIntegrationTest {
                 categoryService.findAll().invoke(result -> {
                     assertNotNull(result);
                     assertFalse(result.isEmpty());
-                    assertTrue(result.size() >= 5);
+                    assertEquals(5, result.size());
                 })
         );
     }

@@ -5,6 +5,7 @@ import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
+import me.shail.common.BaseTest;
 import me.shail.dtos.CartDto;
 import me.shail.dtos.CustomerDto;
 import me.shail.dtos.OrderDto;
@@ -21,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
-public class OrderServiceIntegrationTest {
+public class OrderServiceIntegrationTest extends BaseTest {
 
     @Inject
     OrderService orderService;
@@ -213,15 +214,17 @@ public class OrderServiceIntegrationTest {
         );
 
         // 1.c Create order
-        asserter.execute(() -> orderService.create(orderDto.get())
-        );
+        asserter.execute(() -> orderService.create(orderDto.get()));
+        asserter.execute(() -> orderService.create(orderDto.get()));
+        asserter.execute(() -> orderService.create(orderDto.get()));
+        asserter.execute(() -> orderService.create(orderDto.get()));
 
         // 2. Act and Assert
         asserter.execute(() ->
                         orderService.listAll()
                                 .invoke(result -> {
                                     assertNotNull(result);
-                                    assertFalse(result.isEmpty());
+                                    assertEquals(4, result.size());
                                 })
         );
     }

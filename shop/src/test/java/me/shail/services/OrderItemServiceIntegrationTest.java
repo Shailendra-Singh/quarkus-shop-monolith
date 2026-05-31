@@ -412,5 +412,4 @@ public class OrderItemServiceIntegrationTest {
             assertEquals(createdOrderItemDto1.get(), foundOrderItem);
         }));
     }
-
 }

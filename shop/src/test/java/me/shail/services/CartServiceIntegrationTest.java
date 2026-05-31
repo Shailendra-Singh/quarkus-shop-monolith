@@ -5,6 +5,7 @@ import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
+import me.shail.common.BaseTest;
 import me.shail.dtos.CustomerDto;
 import me.shail.helpers.data.TestDataFactory;
 import me.shail.models.Cart;
@@ -19,11 +20,12 @@ import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.AssertionsKt.assertNotNull;
 
 @QuarkusTest
-public class CartServiceIntegrationTest {
+public class CartServiceIntegrationTest extends BaseTest {
     @Inject
     CartService cartService;
 
@@ -102,7 +104,7 @@ public class CartServiceIntegrationTest {
 
     @Test
     @RunOnVertxContext
-    public void testCreateCart_WhenCustomerDoesNotExist(UniAsserter asserter) {
+    public void testCreate_WhenCustomerDoesNotExist(UniAsserter asserter) {
         var nonExistentCustomer = UUID.randomUUID();
 
         asserter.assertFailedWith(
@@ -114,7 +116,7 @@ public class CartServiceIntegrationTest {
 
     @Test
     @RunOnVertxContext
-    public void testCreateCart_WhenCustomerHasActiveCart(UniAsserter asserter) {
+    public void testCreate_WhenCustomerHasActiveCart(UniAsserter asserter) {
         // 1.a Prepare the Input DTO
 
         var inputDto = TestDataFactory.generateMockCustomerDto();
@@ -157,7 +159,7 @@ public class CartServiceIntegrationTest {
 
     @Test
     @RunOnVertxContext
-    public void testCreateCart(UniAsserter asserter) {
+    public void testCreate(UniAsserter asserter) {
         // 1.a Prepare the Input DTO
 
         var inputDto = TestDataFactory.generateMockCustomerDto();
@@ -181,7 +183,7 @@ public class CartServiceIntegrationTest {
     // --| 2. Find Cart - Tests |---------------------------------------------------------------------------------------
     @Test
     @RunOnVertxContext
-    public void testFindCart_WhenCartDoesNotExist(UniAsserter asserter) {
+    public void testFind_WhenCartDoesNotExist(UniAsserter asserter) {
         var nonExistentCart = UUID.randomUUID();
 
         asserter.assertFailedWith(() -> cartService.findById(nonExistentCart), throwable -> {
@@ -192,7 +194,7 @@ public class CartServiceIntegrationTest {
 
     @Test
     @RunOnVertxContext
-    public void testFindCartById(UniAsserter asserter) {
+    public void testFindById(UniAsserter asserter) {
         var inputDto = TestDataFactory.generateMockCustomerDto();
         AtomicReference<CustomerDto> createdCustomer = new AtomicReference<>();
         AtomicReference<UUID> createdCartId = new AtomicReference<>();
@@ -247,7 +249,7 @@ public class CartServiceIntegrationTest {
                 cartService.findAllActiveCarts()
                         .invoke(returnedCarts -> {
                             assertNotNull(returnedCarts);
-                            assertFalse(returnedCarts.isEmpty());
+                            assertEquals(1, returnedCarts.size());
                         })
         );
     }
@@ -288,7 +290,7 @@ public class CartServiceIntegrationTest {
         asserter.execute(() ->
                 cartService.listAll().invoke(list -> {
                             assertNotNull(list);
-                            assertFalse(list.isEmpty());
+                    assertEquals(3, list.size());
                         }
                 )
         );

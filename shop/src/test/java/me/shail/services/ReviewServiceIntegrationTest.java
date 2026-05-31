@@ -26,7 +26,7 @@ public class ReviewServiceIntegrationTest {
 
     @Test
     @RunOnVertxContext
-    public void testCreateCart_WhenProductDoesNotExist(UniAsserter asserter) {
+    public void testCreate_WhenProductDoesNotExist(UniAsserter asserter) {
         var nonExistentCustomer = UUID.randomUUID();
         var reviewInputDto = TestDataFactory.generateMockReviewDto();
 
@@ -39,7 +39,7 @@ public class ReviewServiceIntegrationTest {
 
     @Test
     @RunOnVertxContext
-    public void testCreateCart(UniAsserter asserter) {
+    public void testCreate(UniAsserter asserter) {
         var inputDto = TestDataFactory.generateMockProductDto();
         AtomicReference<UUID> createdProductId = new AtomicReference<>();
 

@@ -6,9 +6,9 @@ import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
+import me.shail.common.BaseTest;
 import me.shail.dtos.CustomerDto;
 import me.shail.helpers.data.TestDataFactory;
-import me.shail.repositories.CustomerRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -20,13 +20,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
-public class CustomerServiceIntegrationTest {
+public class CustomerServiceIntegrationTest extends BaseTest {
 
     @Inject
     CustomerService customerService;
-
-    @Inject
-    CustomerRepository customerRepository;
 
     // --| 1. Create Customer - Tests |---------------------------------------------------------------------------------
 
@@ -57,8 +54,6 @@ public class CustomerServiceIntegrationTest {
         // 1. Arrange
         var customers = TestDataFactory.generateMockCustomerDtos(5);
 
-        List<CustomerDto> createdCustomers = new ArrayList<>();
-
         // 2. Act
         asserter.execute(() ->
                 Multi.createFrom().iterable(customers)
@@ -70,19 +65,14 @@ public class CustomerServiceIntegrationTest {
         // 3. Assert
         asserter.execute(() ->
                         customerService.findAll()
-                                .onItem().invoke(listOfResults -> {
-                                    createdCustomers.addAll(listOfResults);
+                                .onItem()
+                                .invoke(listOfResults ->
+                                {
                                     assertFalse(listOfResults.isEmpty());
+                                    assertEquals(customers.size(), listOfResults.size());
                                 })
 
         );
-
-        // Clean up
-        for (var createdCustomer : createdCustomers) {
-            asserter.execute(() -> customerRepository
-                    .deleteById(createdCustomer.id())
-                    .invoke(Assertions::assertTrue));
-        }
     }
 
     @Test

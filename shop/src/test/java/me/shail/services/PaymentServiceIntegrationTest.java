@@ -5,6 +5,7 @@ import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityNotFoundException;
+import me.shail.common.BaseTest;
 import me.shail.dtos.CustomerDto;
 import me.shail.dtos.OrderDto;
 import me.shail.helpers.data.TestDataFactory;
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
-public class PaymentServiceIntegrationTest {
+public class PaymentServiceIntegrationTest extends BaseTest {
 
     @Inject
     OrderService orderService;
@@ -194,16 +195,21 @@ public class PaymentServiceIntegrationTest {
         // Create Payment
         asserter.execute(() -> paymentService.create(createdOrderId.get()));
 
-        // Assert impossible max amount: negative amount
-        asserter.execute(() -> paymentService.findByPriceRange(BigDecimal.valueOf(-1)).invoke(paymentDtos -> {
-            assertNotNull(paymentDtos);
-            assertTrue(paymentDtos.isEmpty());
-        }));
+        // Assert impossible max amount: test order has amount of 10
+        asserter.execute(() -> paymentService
+                .findByPriceRange(BigDecimal.valueOf(9)).invoke(paymentDtos -> {
+                    assertNotNull(paymentDtos);
+                    assertTrue(paymentDtos.isEmpty());
+                })
+        );
 
-        // Assert always possible max amount: test order has maximum of 1000
-        asserter.execute(() -> paymentService.findByPriceRange(BigDecimal.valueOf(1001)).invoke(paymentDtos -> {
-            assertNotNull(paymentDtos);
-            assertFalse(paymentDtos.isEmpty());
-        }));
+        // Assert always possible max amount: test order has amount of 10
+        asserter.execute(() -> paymentService
+                .findByPriceRange(BigDecimal.valueOf(11)).invoke(paymentDtos -> {
+                    assertNotNull(paymentDtos);
+                    assertFalse(paymentDtos.isEmpty());
+                    assertEquals(1, paymentDtos.size());
+                })
+        );
     }
 }
