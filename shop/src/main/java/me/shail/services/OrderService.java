@@ -109,7 +109,7 @@ public class OrderService {
 
     @WithCustomStatelessSession
     public Uni<Boolean> existById(UUID id) {
-        return this.orderRepository.existsById(id);
+        return generateUni_ExistById(this.orderRepository, id, false);
     }
 
     @WithTransaction
@@ -184,6 +184,12 @@ public class OrderService {
                 .onItem().ifNull().failWith(() ->
                         new EntityNotFoundException(getOrderNotExistsErrorMsg(orderId))
                 );
+    }
+
+    public static Uni<Boolean> generateUni_ExistById(OrderRepository repository, UUID orderId, boolean managed) {
+        return managed
+                ? repository.existByIdManaged(orderId)
+                : repository.existByIdStateless(orderId);
     }
 
     public static String getOrderNotExistsErrorMsg(UUID orderId) {

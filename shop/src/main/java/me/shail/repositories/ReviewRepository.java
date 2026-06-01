@@ -37,8 +37,20 @@ public class ReviewRepository {
         return this.reviewCommandRepository.deleteReviewsByProductId(productId);
     }
 
-    public Uni<Review> findById(UUID reviewId) {
+    public Uni<Review> findByIdManaged(UUID reviewId) {
+        return this.reviewCommandRepository.findById(reviewId);
+    }
+
+    public Uni<Review> findByIdStateless(UUID reviewId) {
         return this.reviewQueryRespository.findById(reviewId);
+    }
+
+    public Uni<Boolean> existByIdManaged(UUID reviewId) {
+        return this.reviewCommandRepository.existById(reviewId);
+    }
+
+    public Uni<Boolean> existByIdStateless(UUID reviewId) {
+        return this.reviewQueryRespository.existById(reviewId);
     }
 
     public Uni<List<Review>> findReviewsByProductId(UUID productId) {

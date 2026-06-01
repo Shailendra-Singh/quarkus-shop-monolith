@@ -23,6 +23,8 @@ import java.util.UUID;
 @Slf4j
 public class OrderItemService {
 
+    public final static String ORDERITEM_NOT_EXIST_ERROR_MSG = "OrderItem does not exist. Id: ";
+
     @Inject
     OrderItemRepository orderItemRepository;
 
@@ -63,7 +65,7 @@ public class OrderItemService {
 
         return generatedUni.onItem()
                 .ifNull()
-                .failWith(() -> new EntityNotFoundException("OrderItem does not exist. Id: " + orderItemId));
+                .failWith(() -> new EntityNotFoundException(getOrderitemNotExistErrorMsg(orderItemId)));
     }
 
     @WithCustomStatelessSession
@@ -125,10 +127,22 @@ public class OrderItemService {
     @WithCustomStatelessSession
     public Uni<List<OrderItemDto>> findAllByOrderId(UUID orderId) {
         log.debug("Request to get all OrderItems of OrderId {}", orderId);
-        return this.orderItemRepository
-                .findAllByOrderId(orderId)
-                .map(items -> items.stream()
-                        .map(OrderItemService::mapToDto)
-                        .toList());
+        return OrderService.generateUni_ExistById(this.orderRepository, orderId, false)
+                .chain(exists -> {
+                    if (!exists)
+                        return Uni.createFrom().failure(()
+                                -> new EntityNotFoundException(OrderService.getOrderNotExistsErrorMsg(orderId))
+                        );
+
+                    return this.orderItemRepository
+                            .findAllByOrderId(orderId)
+                            .map(items -> items.stream()
+                                    .map(OrderItemService::mapToDto)
+                                    .toList());
+                });
+    }
+
+    public static String getOrderitemNotExistErrorMsg(UUID orderItemId) {
+        return ORDERITEM_NOT_EXIST_ERROR_MSG + orderItemId;
     }
 }

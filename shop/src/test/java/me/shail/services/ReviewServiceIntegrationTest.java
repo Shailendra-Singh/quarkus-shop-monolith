@@ -112,11 +112,12 @@ public class ReviewServiceIntegrationTest {
     public void testFindReviewsByProductId_WhenProductDoesNotExist(UniAsserter asserter) {
         var fakeProductId = UUID.randomUUID();
 
-        asserter.execute(
-                () -> reviewService.findReviewsByProductId(fakeProductId).invoke(result -> {
-                    assertNotNull(result);
-                    assertTrue(result.isEmpty());
-                }));
+        asserter.assertFailedWith(
+                () -> reviewService.findReviewsByProductId(fakeProductId), throwable -> {
+                    assertNotNull(throwable);
+                    assertEquals(EntityNotFoundException.class, throwable.getClass());
+                    assertTrue(throwable.getMessage().toLowerCase().contains("product does not exist"));
+                });
     }
 
     @Test
@@ -153,10 +154,12 @@ public class ReviewServiceIntegrationTest {
     public void testCountReviewsByProductId_WhenProductDoesNotExist(UniAsserter asserter) {
         var fakeProductId = UUID.randomUUID();
 
-        asserter.execute(
-                () -> reviewService.countReviewsByProductId(fakeProductId)
-                        .invoke(reviewCount -> assertEquals(0, reviewCount))
-        );
+        asserter.assertFailedWith(
+                () -> reviewService.countReviewsByProductId(fakeProductId), throwable -> {
+                    assertNotNull(throwable);
+                    assertEquals(EntityNotFoundException.class, throwable.getClass());
+                    assertTrue(throwable.getMessage().toLowerCase().contains("product does not exist"));
+                });
     }
 
     // --| 3. Delete Review - Tests |-----------------------------------------------------------------------------------
@@ -165,7 +168,11 @@ public class ReviewServiceIntegrationTest {
     @RunOnVertxContext
     public void testDeleteById_WhenReviewDoesNotExist(UniAsserter asserter) {
         var fakeReviewId = UUID.randomUUID();
-        asserter.execute(() -> reviewService.deleteById(fakeReviewId).invoke(Assertions::assertFalse));
+        asserter.assertFailedWith(() -> reviewService.deleteById(fakeReviewId), throwable -> {
+            assertNotNull(throwable);
+            assertEquals(EntityNotFoundException.class, throwable.getClass());
+            assertTrue(throwable.getMessage().toLowerCase().contains("review does not exist"));
+        });
     }
 
     @Test
@@ -195,10 +202,12 @@ public class ReviewServiceIntegrationTest {
     public void testDeleteAllReviewsByProductId_WhenProductDoesNotExist(UniAsserter asserter) {
         var fakeProductId = UUID.randomUUID();
 
-        asserter.execute(
-                () -> reviewService.deleteAllReviewsByProductId(fakeProductId)
-                        .invoke(reviewCount -> assertEquals(0, reviewCount))
-        );
+        asserter.assertFailedWith(
+                () -> reviewService.deleteAllReviewsByProductId(fakeProductId), throwable -> {
+                    assertNotNull(throwable);
+                    assertEquals(EntityNotFoundException.class, throwable.getClass());
+                    assertTrue(throwable.getMessage().toLowerCase().contains("product does not exist"));
+                });
     }
 
     @Test

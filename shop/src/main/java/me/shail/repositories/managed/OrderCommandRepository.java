@@ -21,6 +21,17 @@ public interface OrderCommandRepository extends PanacheRepository.Reactive<Order
     Uni<List<Order>> findOrderByCustomerId(UUID customerId);
 
     /**
+     * Checks if an order exists
+     *
+     * @param orderId : order id
+     * @return true/false
+     */
+    default Uni<Boolean> existsById(UUID orderId) {
+        return count("id = ?1", orderId)
+                .map(count -> count > 0);
+    }
+
+    /**
      * Finds an order by id. Eagerly fetches its associated order items as well
      * and cart and cart-customer
      *
