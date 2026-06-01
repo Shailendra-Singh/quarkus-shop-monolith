@@ -18,6 +18,9 @@ import java.util.UUID;
 @ApplicationScoped
 @Slf4j
 public class CategoryService {
+
+    public final static String CATEGORY_NOT_EXIST_ERROR_MSG = "Category does not exist. ID: ";
+
     @Inject
     CategoryRepository categoryRepository;
 
@@ -34,7 +37,7 @@ public class CategoryService {
             generatedUni = repository.findByIdStateless(categoryId);
 
         return generatedUni.onItem()
-                .ifNull().failWith(() -> new EntityNotFoundException("Category does not exist. ID: " + categoryId));
+                .ifNull().failWith(() -> new EntityNotFoundException(getCategoryNotExistErrorMsg(categoryId)));
     }
 
     public static Uni<Boolean> generateUni_ExistById(CategoryRepository repository, UUID categoryId, boolean managed) {
@@ -88,7 +91,7 @@ public class CategoryService {
                 .chain(exists -> {
                     if (!exists)
                         return Uni.createFrom().failure(() ->
-                                new EntityNotFoundException("Category does not exist. ID: " + categoryId)
+                                new EntityNotFoundException(getCategoryNotExistErrorMsg(categoryId))
                         );
 
                     return this.categoryRepository.removeAllProductsFromCategory(categoryId);
@@ -110,5 +113,9 @@ public class CategoryService {
                     return this.categoryRepository.create(category);
                 })
                 .onItem().transform(CategoryService::mapToDto);
+    }
+
+    public static String getCategoryNotExistErrorMsg(UUID categoryId) {
+        return CATEGORY_NOT_EXIST_ERROR_MSG + categoryId;
     }
 }

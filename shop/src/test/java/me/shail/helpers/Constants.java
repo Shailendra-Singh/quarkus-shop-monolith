@@ -14,4 +14,6 @@ public final class Constants {
     public final static String CUSTOMER_ROOT_URL = "/customers";
     public final static String ORDER_ROOT_URL = "/orders";
     public final static String PAYMENT_ROOT_URL = "/payments";
+    public final static String CATEGORY_ROOT_URL = "/categories";
+    public final static String PRODUCT_ROOT_URL = "/products";
 }

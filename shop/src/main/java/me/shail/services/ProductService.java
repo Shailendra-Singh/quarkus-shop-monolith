@@ -22,6 +22,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @ApplicationScoped
 public class ProductService {
+
+    public final static String PRODUCT_NOT_EXIST_ERROR_MSG = "Product does not exist. ID: ";
+    
     @Inject
     ProductRepository productRepository;
 
@@ -127,7 +130,7 @@ public class ProductService {
                         return this.productRepository.removeCategoryFromProduct(productId, categoryId);
                     else
                         return Uni.createFrom().failure(
-                                () -> new EntityNotFoundException("Product does not exist. ID: " + productId)
+                                () -> new EntityNotFoundException(getProductNotExistErrorMsg(productId))
                         );
                 });
     }
@@ -156,10 +159,14 @@ public class ProductService {
             generatedUni = repository.findByIdStateless(productId);
 
         return generatedUni.onItem().ifNull()
-                .failWith(() -> new EntityNotFoundException("Product does not exist. ID: " + productId));
+                .failWith(() -> new EntityNotFoundException(getProductNotExistErrorMsg(productId)));
     }
 
     public static Uni<Boolean> generateUni_ExistById(ProductRepository repository, UUID productId, boolean managed) {
         return managed ? repository.existsByIdManaged(productId) : repository.existsByIdStateless(productId);
+    }
+
+    public static String getProductNotExistErrorMsg(UUID productId) {
+        return PRODUCT_NOT_EXIST_ERROR_MSG + productId;
     }
 }
