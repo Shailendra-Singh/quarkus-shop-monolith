@@ -73,6 +73,12 @@ public class ReviewService {
                 .map(ReviewService::mapToDto);
     }
 
+    @WithCustomStatelessSession
+    public Uni<Boolean> existById(UUID reviewId) {
+        log.debug("Request to check if exists Review: {}", reviewId);
+        return generateUni_ExistById(this.reviewRepository, reviewId, false);
+    }
+
     @WithTransaction
     public Uni<ReviewDto> create(ReviewDto reviewDto, UUID productId) {
         log.debug("Request to create Review: {} for Product: {}", reviewDto, productId);

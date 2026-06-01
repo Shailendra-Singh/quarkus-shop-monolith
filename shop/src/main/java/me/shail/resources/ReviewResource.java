@@ -24,6 +24,16 @@ public class ReviewResource {
         return this.reviewService.findById(reviewId);
     }
 
+    @HEAD
+    @Path("/{id}")
+    public Uni<Response> existById(@PathParam("id") UUID reviewId) {
+        return this.reviewService.existById(reviewId).map(
+                exists -> exists ?
+                        Response.ok().build() :
+                        Response.status(Response.Status.NOT_FOUND).build()
+        );
+    }
+
     @GET
     @Path("/products/{productId}")
     public Uni<List<ReviewDto>> findReviewsByProductId(@PathParam("productId") UUID productId) {
