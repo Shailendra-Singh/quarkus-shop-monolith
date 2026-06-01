@@ -10,6 +10,7 @@ import me.shail.dtos.CustomerDto;
 import me.shail.dtos.OrderDto;
 import me.shail.helpers.data.TestDataFactory;
 import me.shail.models.enums.OrderStatus;
+import me.shail.services.common.BaseTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
-public class OrderServiceIntegrationTest {
+public class OrderServiceIntegrationTest extends BaseTest {
 
     @Inject
     OrderService orderService;
@@ -98,13 +99,13 @@ public class OrderServiceIntegrationTest {
 
     @Test
     @RunOnVertxContext
-    public void testExistsById_WhenOrderDoesNotExist(UniAsserter asserter) {
-        asserter.execute(() -> orderService.existsById(UUID.randomUUID()).invoke(Assertions::assertFalse));
+    public void testExistById_WhenOrderDoesNotExist(UniAsserter asserter) {
+        asserter.execute(() -> orderService.existById(UUID.randomUUID()).invoke(Assertions::assertFalse));
     }
 
     @Test
     @RunOnVertxContext
-    public void testExistsById_WhenOrderExist(UniAsserter asserter) {
+    public void testExistById_WhenOrderExist(UniAsserter asserter) {
         // 1.a Create Customer
         var inputDto = TestDataFactory.generateMockCustomerDto();
         AtomicReference<CustomerDto> createdCustomer = new AtomicReference<>();
@@ -131,7 +132,7 @@ public class OrderServiceIntegrationTest {
         );
 
         // 2. Act and Assert
-        asserter.execute(() -> orderService.existsById(createdOrder.get().id())
+        asserter.execute(() -> orderService.existById(createdOrder.get().id())
                                 .invoke(Assertions::assertTrue)
         );
     }
@@ -213,18 +214,18 @@ public class OrderServiceIntegrationTest {
         );
 
         // 1.c Create order
-        asserter.execute(() -> orderService.create(orderDto.get())
-        );
+        asserter.execute(() -> orderService.create(orderDto.get()));
+        asserter.execute(() -> orderService.create(orderDto.get()));
+        asserter.execute(() -> orderService.create(orderDto.get()));
+        asserter.execute(() -> orderService.create(orderDto.get()));
 
         // 2. Act and Assert
         asserter.execute(() ->
-//                sessionFactory.withStatelessSession(_ ->
                         orderService.listAll()
                                 .invoke(result -> {
                                     assertNotNull(result);
-                                    assertFalse(result.isEmpty());
+                                    assertEquals(4, result.size());
                                 })
-//                )
         );
     }
 
@@ -335,7 +336,6 @@ public class OrderServiceIntegrationTest {
                 .invoke(paymentDto -> createdPaymentId.set(paymentDto.id()))
         );
 
-        // Assert impossible max amount: test order has minimum of 10
         asserter.execute(() -> orderService.findOrderByPaymentId(createdPaymentId.get()).invoke(order -> {
             assertNotNull(order);
             assertNotNull(order.paymentId());

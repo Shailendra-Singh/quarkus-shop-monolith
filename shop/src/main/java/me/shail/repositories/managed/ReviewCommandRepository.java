@@ -22,4 +22,15 @@ public interface ReviewCommandRepository extends PanacheRepository.Reactive<Revi
                     .executeUpdate();
         });
     }
+
+    /**
+     * Checks if a review exists
+     *
+     * @param reviewId review id
+     * @return True/False
+     */
+    default Uni<Boolean> existById(UUID reviewId) {
+        return count("id = ?1", reviewId)
+                .map(count -> count == 1);
+    }
 }

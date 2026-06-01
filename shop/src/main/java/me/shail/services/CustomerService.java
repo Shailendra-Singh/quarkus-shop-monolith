@@ -13,12 +13,14 @@ import me.shail.repositories.CustomerRepository;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Slf4j
 @ApplicationScoped
 public class CustomerService {
+
+    public final static String CUSTOMER_NOT_EXIST_ERROR_MSG = "Customer does not exist. ID: ";
+
     @Inject
     CustomerRepository customerRepository;
 
@@ -54,13 +56,9 @@ public class CustomerService {
     public Uni<List<CustomerDto>> findAll() {
         log.debug("Request to get all Customers");
         return this.customerRepository.listAll()
-                .onItem()
-                .transformToUni(customers -> Uni.createFrom()
-                        .item(customers.stream()
-                                .map(CustomerService::mapToDto)
-                                .toList()
-                        )
-                );
+                .map(customers -> customers.stream()
+                        .map(CustomerService::mapToDto)
+                        .toList());
     }
 
     @WithCustomStatelessSession
@@ -69,7 +67,7 @@ public class CustomerService {
         return this.customerRepository
                 .findByIdStateless(id)
                 .onItem().ifNull().failWith(() ->
-                        new NoSuchElementException("Customer doesn't exist. ID:  " + id)
+                        new EntityNotFoundException(getCustomerDoesNotExistErrorMessage(id))
                 )
                 .onItem().transform(CustomerService::mapToDto);
     }
@@ -79,15 +77,9 @@ public class CustomerService {
         String status = enabled ? "active" : "inactive";
         log.debug("Request to get all {} customers", status);
         return this.customerRepository.findAllByState(enabled)
-                .onItem()
-                .transformToUni(customers ->
-                        Uni.createFrom()
-                                .item(customers
-                                        .stream()
-                                        .map(CustomerService::mapToDto)
-                                        .toList()
-                                )
-                );
+                .map(customers -> customers.stream()
+                        .map(CustomerService::mapToDto)
+                        .toList());
     }
 
     @WithTransaction
@@ -97,7 +89,7 @@ public class CustomerService {
                 .onItem().transformToUni(rowsAffected -> {
                     if (rowsAffected == 0)
                         return Uni.createFrom().failure(
-                                new NoSuchElementException("Customer doesn't exist. ID:  " + id)
+                                new EntityNotFoundException(getCustomerDoesNotExistErrorMessage(id))
                         );
 
                     return Uni.createFrom().item(rowsAffected == 1);
@@ -115,6 +107,10 @@ public class CustomerService {
         return generatedUni
                 .onItem()
                 .ifNull()
-                .failWith(new EntityNotFoundException("The Customer does not exist!"));
+                .failWith(new EntityNotFoundException(getCustomerDoesNotExistErrorMessage(customerId)));
+    }
+
+    public static String getCustomerDoesNotExistErrorMessage(UUID customerId) {
+        return CUSTOMER_NOT_EXIST_ERROR_MSG + customerId;
     }
 }

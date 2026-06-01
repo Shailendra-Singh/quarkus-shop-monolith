@@ -22,6 +22,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @ApplicationScoped
 public class ProductService {
+
+    public final static String PRODUCT_NOT_EXIST_ERROR_MSG = "Product does not exist. ID: ";
+    
     @Inject
     ProductRepository productRepository;
 
@@ -50,27 +53,6 @@ public class ProductService {
                         .map(c -> c.id)
                         .collect(Collectors.toUnmodifiableSet())
         );
-    }
-
-    public static Uni<Product> generateUni_FindById(ProductRepository repository, UUID productId, boolean managed) {
-        Uni<Product> generatedUni;
-        if (managed)
-            generatedUni = repository.findByIdManaged(productId);
-        else
-            generatedUni = repository.findByIdStateless(productId);
-
-        return generatedUni.onItem().ifNull()
-                .failWith(() -> new EntityNotFoundException("Product does not exist. ID: " + productId));
-    }
-
-    public static Uni<Boolean> generateUni_ExistById(ProductRepository repository, UUID productId, boolean managed) {
-        Uni<Boolean> generatedUni;
-        if (managed)
-            generatedUni = repository.existsByIdManaged(productId);
-        else
-            generatedUni = repository.existsByIdStateless(productId);
-
-        return generatedUni;
     }
 
     @WithCustomStatelessSession
@@ -148,7 +130,7 @@ public class ProductService {
                         return this.productRepository.removeCategoryFromProduct(productId, categoryId);
                     else
                         return Uni.createFrom().failure(
-                                () -> new EntityNotFoundException("Product does not exist. ID: " + productId)
+                                () -> new EntityNotFoundException(getProductNotExistErrorMsg(productId))
                         );
                 });
     }
@@ -166,5 +148,25 @@ public class ProductService {
                         .stream()
                         .map(ProductService::mapToDto).toList()
                 );
+    }
+
+
+    public static Uni<Product> generateUni_FindById(ProductRepository repository, UUID productId, boolean managed) {
+        Uni<Product> generatedUni;
+        if (managed)
+            generatedUni = repository.findByIdManaged(productId);
+        else
+            generatedUni = repository.findByIdStateless(productId);
+
+        return generatedUni.onItem().ifNull()
+                .failWith(() -> new EntityNotFoundException(getProductNotExistErrorMsg(productId)));
+    }
+
+    public static Uni<Boolean> generateUni_ExistById(ProductRepository repository, UUID productId, boolean managed) {
+        return managed ? repository.existsByIdManaged(productId) : repository.existsByIdStateless(productId);
+    }
+
+    public static String getProductNotExistErrorMsg(UUID productId) {
+        return PRODUCT_NOT_EXIST_ERROR_MSG + productId;
     }
 }

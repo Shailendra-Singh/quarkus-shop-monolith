@@ -76,7 +76,7 @@ public interface ProductCommandRepository extends PanacheRepository.Reactive<Pro
                             "SELECT :pId, unnest(CAST(:cIds AS uuid[])) " +
                             "ON CONFLICT (product_id, category_id) DO NOTHING";
 
-            String errorMessage = "FK Constraint Violation. Invalid Product Id or one or more Category Ids.";
+            String errorMessage = Product.PRODUCT_ID_CATEGORY_ID_FK_CONSTRAINT_VIOLATION_ERROR_MESSAGE;
 
             return session.createNativeQuery(insertQuery)
                     .setParameter("pId", productId)
