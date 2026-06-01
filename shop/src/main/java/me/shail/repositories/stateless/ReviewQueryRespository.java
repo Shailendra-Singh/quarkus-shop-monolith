@@ -28,4 +28,15 @@ public interface ReviewQueryRespository extends PanacheRepository.Reactive.State
     default Uni<Long> countReviewsByProductId(UUID productId) {
         return count("FROM Review r LEFT JOIN FETCH r.product p where p.id = ?1", productId);
     }
+
+    /**
+     * Checks if a review exists
+     *
+     * @param reviewId review id
+     * @return True/False
+     */
+    default Uni<Boolean> existById(UUID reviewId) {
+        return count("id = ?1", reviewId)
+                .map(count -> count == 1);
+    }
 }

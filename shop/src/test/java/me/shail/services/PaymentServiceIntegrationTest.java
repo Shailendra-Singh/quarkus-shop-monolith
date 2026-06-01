@@ -9,6 +9,7 @@ import me.shail.dtos.CustomerDto;
 import me.shail.dtos.OrderDto;
 import me.shail.helpers.data.TestDataFactory;
 import me.shail.models.enums.PaymentStatus;
+import me.shail.services.common.BaseTest;
 import org.junit.jupiter.api.Test;
 
 import javax.naming.OperationNotSupportedException;
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
-public class PaymentServiceIntegrationTest {
+public class PaymentServiceIntegrationTest extends BaseTest {
 
     @Inject
     OrderService orderService;
@@ -194,16 +195,21 @@ public class PaymentServiceIntegrationTest {
         // Create Payment
         asserter.execute(() -> paymentService.create(createdOrderId.get()));
 
-        // Assert impossible max amount: negative amount
-        asserter.execute(() -> paymentService.findByPriceRange(-1d).invoke(paymentDtos -> {
-            assertNotNull(paymentDtos);
-            assertTrue(paymentDtos.isEmpty());
-        }));
+        // Assert impossible max amount: test order had amount of 10
+        asserter.execute(() -> paymentService
+                .findByPriceRange(BigDecimal.valueOf(9)).invoke(paymentDtos -> {
+                    assertNotNull(paymentDtos);
+                    assertTrue(paymentDtos.isEmpty());
+                })
+        );
 
-        // Assert always possible max amount: test order has maximum of 1000
-        asserter.execute(() -> paymentService.findByPriceRange(1001d).invoke(paymentDtos -> {
-            assertNotNull(paymentDtos);
-            assertFalse(paymentDtos.isEmpty());
-        }));
+        // Assert always possible max amount: test order had amount of 10
+        asserter.execute(() -> paymentService
+                .findByPriceRange(BigDecimal.valueOf(11)).invoke(paymentDtos -> {
+                    assertNotNull(paymentDtos);
+                    assertFalse(paymentDtos.isEmpty());
+                    assertEquals(1, paymentDtos.size());
+                })
+        );
     }
 }

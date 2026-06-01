@@ -41,7 +41,7 @@ public class OrderItemServiceIntegrationTest {
 
     @Test
     @RunOnVertxContext
-    public void testCreate_WhenOrderAndProductDoesNotExist(UniAsserter asserter) {
+    public void testCreate_WhenOrderDoesNotExist(UniAsserter asserter) {
         UUID orderId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
 
@@ -51,8 +51,47 @@ public class OrderItemServiceIntegrationTest {
                     assertNotNull(throwable);
                     assertEquals(EntityNotFoundException.class, throwable.getClass());
                     assertTrue(
-                            throwable.getMessage().toLowerCase().contains("order does not exist") ||
-                                    throwable.getMessage().toLowerCase().contains("product does not exist")
+                            throwable.getMessage().toLowerCase().contains("order does not exist")
+                    );
+                });
+    }
+
+    @Test
+    @RunOnVertxContext
+    public void testCreate_WhenProductDoesNotExist(UniAsserter asserter) {
+        // 1.a Create Customer
+        var inputDto = TestDataFactory.generateMockCustomerDto();
+        AtomicReference<CustomerDto> createdCustomer = new AtomicReference<>();
+
+        asserter.execute(() -> customerService.create(inputDto)
+                .onItem()
+                .invoke(createdCustomer::set)
+        );
+
+        // 1.b Create Cart associated with the customer
+        AtomicReference<OrderDto> inputOrderDto = new AtomicReference<>();
+
+        asserter.execute(() -> cartService.create(createdCustomer.get().id())
+                .invoke(result -> {
+                    OrderDto mockOrderDto = TestDataFactory.generateMockOrderDto(result);
+                    inputOrderDto.set(mockOrderDto);
+                })
+        );
+
+        // 1.c Create Order associated with the cart
+        AtomicReference<OrderDto> createdOrderDto = new AtomicReference<>();
+        asserter.execute(() -> orderService.create(inputOrderDto.get()).invoke(createdOrderDto::set));
+
+        UUID productId = UUID.randomUUID();
+
+        asserter.assertFailedWith(() -> orderItemService.create(
+                        TestDataFactory.generateMockOrderItemDto(productId, createdOrderDto.get().id())
+                )
+                , throwable -> {
+                    assertNotNull(throwable);
+                    assertEquals(EntityNotFoundException.class, throwable.getClass());
+                    assertTrue(
+                            throwable.getMessage().toLowerCase().contains("product does not exist")
                     );
                 });
     }
@@ -255,10 +294,11 @@ public class OrderItemServiceIntegrationTest {
     @RunOnVertxContext
     public void testFindAllByOrderId_WhenOrderDoesNotExist(UniAsserter asserter) {
         UUID orderId = UUID.randomUUID();
-        asserter.execute(() -> orderItemService.findAllByOrderId(orderId).invoke(result -> {
-            assertNotNull(result);
-            assertTrue(result.isEmpty());
-        }));
+        asserter.assertFailedWith(() -> orderItemService.findAllByOrderId(orderId), throwable -> {
+            assertNotNull(throwable);
+            assertEquals(EntityNotFoundException.class, throwable.getClass());
+            assertTrue(throwable.getMessage().toLowerCase().contains("order does not exist"));
+        });
     }
 
     @Test
@@ -412,5 +452,4 @@ public class OrderItemServiceIntegrationTest {
             assertEquals(createdOrderItemDto1.get(), foundOrderItem);
         }));
     }
-
 }

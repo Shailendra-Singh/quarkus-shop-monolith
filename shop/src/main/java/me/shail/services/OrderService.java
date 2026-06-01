@@ -14,6 +14,7 @@ import me.shail.models.Order;
 import me.shail.models.Payment;
 import me.shail.models.enums.OrderStatus;
 import me.shail.models.enums.PaymentStatus;
+import me.shail.repositories.CartRepository;
 import me.shail.repositories.CustomerRepository;
 import me.shail.repositories.OrderRepository;
 import me.shail.repositories.PaymentRepository;
@@ -24,6 +25,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @ApplicationScoped
 public class OrderService {
+
+    public final static String ORDER_NOT_EXISTS_ERROR_MSG = "The Order does not exist! Id: ";
+
     @Inject
     OrderRepository orderRepository;
 
@@ -37,7 +41,7 @@ public class OrderService {
     PaymentRepository paymentRepository;
 
     @Inject
-    CartService cartService;
+    CartRepository cartRepository;
 
     public static OrderDto mapToDto(Order order) {
         Set<OrderItemDto> orderItems = order.orderItems == null || order.orderItems.isEmpty()
@@ -71,12 +75,10 @@ public class OrderService {
     @WithCustomStatelessSession
     public Uni<List<OrderDto>> listAll() {
         log.debug("Request to get all Orders");
-        return this.orderRepository.listAllWithSubItems().onItem()
-                .transformToUni(orders -> Uni.createFrom()
-                        .item(orders.stream()
-                                .map(OrderService::mapToDto)
-                                .toList()
-                        ));
+        return this.orderRepository.listAllWithSubItems()
+                .map(orders -> orders.stream()
+                        .map(OrderService::mapToDto)
+                        .toList());
     }
 
     @WithCustomStatelessSession
@@ -84,13 +86,10 @@ public class OrderService {
         return CustomerService.generateUni_FindCustomerById(customerRepository, customerId, false)
                 .chain(_ ->
                         this.orderRepository.findOrderByCustomerId(customerId)
-                                .onItem().transformToUni(orders -> Uni.createFrom()
-                                        .item(orders.stream()
-                                                .map(OrderService::mapToDto)
-                                                .toList()
-                                        )
-                                )
-                );
+                                .map(orders -> orders.stream()
+                                        .map(OrderService::mapToDto)
+                                        .toList()
+                                ));
 
     }
 
@@ -101,24 +100,23 @@ public class OrderService {
                 .onItem().transform(OrderService::mapToDto);
     }
 
-    public static Uni<Order> generateUni_FindById(OrderRepository repository, UUID orderId, boolean managed) {
-        Uni<Order> generatedUni;
-        if (managed)
-            generatedUni = repository.findOrderByIdWithOrderItemsManaged(orderId);
-        else
-            generatedUni = repository.findOrderByIdWithOrderItemsStateless(orderId);
+    @WithCustomStatelessSession
+    public Uni<OrderDto> findById(UUID orderId) {
+        log.debug("Request to get Order: {}", orderId);
+        return generateUni_FindById(this.orderRepository, orderId, false)
+                .map(OrderService::mapToDto);
+    }
 
-        return generatedUni
-                .onItem().ifNull().failWith(() ->
-                        new EntityNotFoundException("The Order does not exist! Id: " + orderId)
-                );
+    @WithCustomStatelessSession
+    public Uni<Boolean> existById(UUID id) {
+        return generateUni_ExistById(this.orderRepository, id, false);
     }
 
     @WithTransaction
     public Uni<OrderDto> create(OrderDto orderDto) {
         log.debug("Request to create Order: {}", orderDto);
         UUID cartId = orderDto.cart().id();
-        return cartService.generateUni_FindCartWithCustomer(cartId, true)
+        return CartService.generateUni_FindCartWithCustomer(this.cartRepository, cartId, true)
                 .chain(cart -> {
                     Address shipmentAddress = AddressService.createFromDto(orderDto.shipmentAddress());
                     Order order = new Order(
@@ -132,18 +130,6 @@ public class OrderService {
                     );
                     return this.orderRepository.create(order);
                 }).onItem().transform(OrderService::mapToDto);
-    }
-
-    @WithCustomStatelessSession
-    public Uni<OrderDto> findById(UUID orderId) {
-        log.debug("Request to get Order: {}", orderId);
-        return generateUni_FindById(this.orderRepository, orderId, false)
-                .map(OrderService::mapToDto);
-    }
-
-    @WithCustomStatelessSession
-    public Uni<Boolean> existsById(UUID id) {
-        return this.orderRepository.existsById(id);
     }
 
     @WithTransaction
@@ -168,21 +154,16 @@ public class OrderService {
                         .map(payment -> this.paymentService.generateRefund(payment.id))
                         .toList();
 
-                yield Uni.createFrom().item(refundUnis)
-                        .chain(list -> {
-                            if (list.isEmpty()) {
+                if (refundUnis.isEmpty()) {
+                    order.status = OrderStatus.CANCELLED;
+                    yield Uni.createFrom().item(Boolean.TRUE);
+                } else {
+                    yield Uni.join().all(refundUnis).andCollectFailures()
+                            .map(results -> {
                                 order.status = OrderStatus.CANCELLED;
-                                return Uni.createFrom().item(Boolean.TRUE);
-                            }
-
-                            return Uni.join().all(refundUnis).andCollectFailures()
-                                    .onItem().transform
-                                            (results -> {
-                                                order.status = OrderStatus.CANCELLED;
-                                                return results.stream().allMatch(Boolean.TRUE::equals);
-                                            });
-                        });
-
+                                return results.stream().allMatch(Boolean.TRUE::equals);
+                            });
+                }
             }
 
             default -> {
@@ -190,5 +171,28 @@ public class OrderService {
                 yield Uni.createFrom().item(Boolean.TRUE);
             }
         };
+    }
+
+    public static Uni<Order> generateUni_FindById(OrderRepository repository, UUID orderId, boolean managed) {
+        Uni<Order> generatedUni;
+        if (managed)
+            generatedUni = repository.findOrderByIdWithOrderItemsManaged(orderId);
+        else
+            generatedUni = repository.findOrderByIdWithOrderItemsStateless(orderId);
+
+        return generatedUni
+                .onItem().ifNull().failWith(() ->
+                        new EntityNotFoundException(getOrderNotExistsErrorMsg(orderId))
+                );
+    }
+
+    public static Uni<Boolean> generateUni_ExistById(OrderRepository repository, UUID orderId, boolean managed) {
+        return managed
+                ? repository.existByIdManaged(orderId)
+                : repository.existByIdStateless(orderId);
+    }
+
+    public static String getOrderNotExistsErrorMsg(UUID orderId) {
+        return ORDER_NOT_EXISTS_ERROR_MSG + orderId;
     }
 }

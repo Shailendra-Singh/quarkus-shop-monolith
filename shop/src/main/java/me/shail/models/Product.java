@@ -22,6 +22,8 @@ import java.util.Set;
 public class Product extends AbstractEntity {
 
     public static final String TABLE_PRODUCT_CATEGORIES = "product_categories";
+    public final static String PRODUCT_ID_CATEGORY_ID_FK_CONSTRAINT_VIOLATION_ERROR_MESSAGE =
+            "FK Constraint Violation. Invalid Product Id or one or more Category Ids.";
 
     @NotNull
     @Column(name = "name", nullable = false)

@@ -2,7 +2,6 @@ package me.shail.repositories;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
 import me.shail.models.Order;
 import me.shail.repositories.managed.OrderCommandRepository;
@@ -48,11 +47,15 @@ public class OrderRepository {
         return this.orderQueryRepository.findOrderByIdWithSubItems(orderId);
     }
 
-    public Uni<List<Order>> findOrderByCustomerId(UUID customerId) {
-        return this.orderQueryRepository.findOrderByCustomerId(customerId);
+    public Uni<Boolean> existByIdManaged(UUID orderId) {
+        return this.orderCommandRepository.existsById(orderId);
     }
 
-    public Uni<Boolean> existsById(UUID orderId) {
+    public Uni<Boolean> existByIdStateless(UUID orderId) {
         return this.orderQueryRepository.existsById(orderId);
+    }
+
+    public Uni<List<Order>> findOrderByCustomerId(UUID customerId) {
+        return this.orderQueryRepository.findOrderByCustomerId(customerId);
     }
 }
