@@ -1,0 +1,39 @@
+# Rendered to /etc/nginx/conf.d/default.conf at startup by nginx's
+# envsubst-on-templates step. Only ${API_UPSTREAM} is substituted; nginx
+# runtime variables ($uri, $host, …) are preserved.
+server {
+    listen       5173;
+    server_name  _;
+    root   /usr/share/nginx/html;
+    index  index.html;
+
+    # Never cache the runtime config or the HTML shell.
+    location = /config.js {
+        add_header Cache-Control "no-store";
+    }
+    location = /index.html {
+        add_header Cache-Control "no-store";
+    }
+
+    # Reverse-proxy API calls to the backend. Same origin as the app, so the
+    # browser makes no cross-origin request and CORS never applies.
+    location /api/ {
+        proxy_pass ${API_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Client-side routing: fall back to index.html for unknown paths.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Long-cache fingerprinted assets emitted by Vite.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
