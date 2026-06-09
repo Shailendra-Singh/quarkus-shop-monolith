@@ -1,0 +1,16 @@
+# Works with `podman compose up --build` or `podman-compose up --build`.
+services:
+  storefront:
+    build:
+      context: .
+    image: shop-storefront:latest
+    # Host networking so the container can reach a backend bound to the host's
+    # 127.0.0.1:8080. nginx listens on 5173 → open http://localhost:5173
+    network_mode: host
+    environment:
+      # Reverse-proxy target for /api. Use the host loopback when the backend
+      # runs on the host.
+      API_UPSTREAM: "http://127.0.0.1:8080"
+      # Browser-side base; relative so requests go through the proxy (no CORS).
+      API_BASE_URL: "/api"
+    restart: unless-stopped
